@@ -1,0 +1,54 @@
+<template>
+    <lightning-card title="DeploymentLens — Setup Assistant" icon-name="standard:setup_assistant_step">
+        <div class="slds-var-p-horizontal_medium slds-var-p-bottom_medium">
+            <p class="slds-var-m-bottom_medium slds-text-color_weak">
+                The External Credential and Named Credential are already installed.
+                Complete these three steps once per org, then test the connection.
+            </p>
+
+            <template lwc:if={info}>
+                <div class="slds-text-heading_small slds-var-m-bottom_x-small">Step 1 — Create an External Client App</div>
+                <p>Setup → External Client App Manager → New. Enable OAuth, enable the
+                <b>Client Credentials Flow</b>, set a <b>Run-As user</b> (an admin with API access),
+                scope <code>api</code>. Callback URL is unused by this flow — paste:</p>
+                <div class="slds-box slds-box_x-small slds-var-m-vertical_x-small value-row">
+                    <code>{info.callbackUrl}</code>
+                    <lightning-button-icon icon-name="utility:copy_to_clipboard" alternative-text="Copy"
+                        data-value={info.callbackUrl} onclick={handleCopy}></lightning-button-icon>
+                </div>
+                <p>Save, then copy the consumer key and secret. Wait 5–10 minutes for propagation.</p>
+
+                <div class="slds-text-heading_small slds-var-m-top_medium slds-var-m-bottom_x-small">Step 2 — Point the External Credential at this org</div>
+                <p>Setup → Named Credentials → External Credentials tab →
+                <b>DeploymentLens Self EC</b> → Edit. Set the token endpoint to:</p>
+                <div class="slds-box slds-box_x-small slds-var-m-vertical_x-small value-row">
+                    <code>{info.tokenEndpoint}</code>
+                    <lightning-button-icon icon-name="utility:copy_to_clipboard" alternative-text="Copy"
+                        data-value={info.tokenEndpoint} onclick={handleCopy}></lightning-button-icon>
+                </div>
+                <p>Then edit the <b>Admin</b> principal and paste the consumer key (Client Id)
+                and consumer secret (Client Secret) from step 1.</p>
+
+                <div class="slds-text-heading_small slds-var-m-top_medium slds-var-m-bottom_x-small">Step 3 — Point the Named Credential at this org</div>
+                <p>Setup → Named Credentials → <b>DeploymentLens Self</b> → Edit. Set URL to:</p>
+                <div class="slds-box slds-box_x-small slds-var-m-vertical_x-small value-row">
+                    <code>{info.orgUrl}</code>
+                    <lightning-button-icon icon-name="utility:copy_to_clipboard" alternative-text="Copy"
+                        data-value={info.orgUrl} onclick={handleCopy}></lightning-button-icon>
+                </div>
+            </template>
+
+            <div class="slds-var-m-top_medium">
+                <lightning-button variant="brand" label="Test connection" onclick={handleTest}
+                    disabled={testing}></lightning-button>
+            </div>
+
+            <template lwc:if={testResult}>
+                <div class={resultBoxClass}>
+                    <p><b>{testResult.status}</b> — {testResult.detail}</p>
+                    <p class="slds-var-m-top_xx-small">{testResult.hint}</p>
+                </div>
+            </template>
+        </div>
+    </lightning-card>
+</template>

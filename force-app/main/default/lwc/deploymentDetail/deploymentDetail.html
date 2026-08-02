@@ -1,0 +1,53 @@
+<template>
+    <template lwc:if={isLoading}>
+        <lightning-spinner alternative-text="Loading deployment detail" size="medium"></lightning-spinner>
+    </template>
+    <template lwc:if={error}>
+        <div class="slds-text-color_error slds-var-p-around_small">{error}</div>
+    </template>
+
+    <template lwc:if={detail}>
+        <div class="slds-var-m-bottom_small">
+            <lightning-badge label={statusLabel} class={statusBadgeClass}></lightning-badge>
+            <span class="slds-var-m-left_small slds-text-color_weak">
+                {detail.numberComponentsTotal} components,
+                {detail.numberComponentErrors} component errors,
+                {detail.numberTestsTotal} tests,
+                {detail.numberTestErrors} test failures
+            </span>
+        </div>
+
+        <lightning-tabset>
+            <lightning-tab label={successTabLabel}>
+                <lightning-input
+                    type="search"
+                    label="Filter components"
+                    onchange={handleFilterChange}
+                    class="slds-var-m-bottom_x-small">
+                </lightning-input>
+                <lightning-datatable
+                    key-field="key"
+                    data={filteredSuccesses}
+                    columns={successColumns}
+                    hide-checkbox-column>
+                </lightning-datatable>
+            </lightning-tab>
+            <lightning-tab label={failureTabLabel}>
+                <lightning-datatable
+                    key-field="key"
+                    data={failures}
+                    columns={failureColumns}
+                    hide-checkbox-column>
+                </lightning-datatable>
+            </lightning-tab>
+            <lightning-tab label={testTabLabel}>
+                <lightning-datatable
+                    key-field="key"
+                    data={tests}
+                    columns={testColumns}
+                    hide-checkbox-column>
+                </lightning-datatable>
+            </lightning-tab>
+        </lightning-tabset>
+    </template>
+</template>

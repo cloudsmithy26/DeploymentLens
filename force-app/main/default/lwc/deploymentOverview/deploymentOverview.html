@@ -1,0 +1,43 @@
+<template>
+    <lightning-card title="DeploymentLens" icon-name="standard:code_playground">
+        <div class="slds-var-p-horizontal_medium">
+            <template lwc:if={showList}>
+                <div class="slds-grid slds-gutters slds-wrap slds-var-m-bottom_small">
+                    <div class="slds-col slds-size_2-of-3">
+                        <lightning-input
+                            type="search"
+                            label="Find deployment by Id"
+                            placeholder="Paste a Deployment Id (0Af...)"
+                            value={searchId}
+                            onchange={handleSearchChange}
+                            onkeyup={handleSearchKeyUp}>
+                        </lightning-input>
+                    </div>
+                    <div class="slds-col slds-size_1-of-3">
+                        <lightning-combobox
+                            label="Show last"
+                            value={recordLimit}
+                            options={limitOptions}
+                            onchange={handleLimitChange}>
+                        </lightning-combobox>
+                    </div>
+                </div>
+                <c-deployment-list
+                    limit-size={recordLimit}
+                    search-id={activeSearchId}
+                    onselectdeployment={handleSelect}>
+                </c-deployment-list>
+            </template>
+
+            <template lwc:if={showDetail}>
+                <lightning-button
+                    label="Back to deployments"
+                    icon-name="utility:back"
+                    onclick={handleBack}
+                    class="slds-var-m-bottom_small">
+                </lightning-button>
+                <c-deployment-detail deployment-id={selectedDeploymentId}></c-deployment-detail>
+            </template>
+        </div>
+    </lightning-card>
+</template>

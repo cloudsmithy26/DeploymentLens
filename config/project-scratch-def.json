@@ -1,0 +1,9 @@
+{
+  "orgName": "DeploymentLens Dev",
+  "edition": "Developer",
+  "features": ["EnableSetPasswordInApi"],
+  "settings": {
+    "lightningExperienceSettings": { "enableS1DesktopEnabled": true },
+    "securitySettings": { "sessionSettings": { "sessionTimeout": "TwelveHours" } }
+  }
+}

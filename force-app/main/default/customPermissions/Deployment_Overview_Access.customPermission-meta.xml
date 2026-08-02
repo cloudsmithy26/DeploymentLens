@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomPermission xmlns="http://soap.sforce.com/2006/04/metadata">
+    <label>DeploymentLens Access</label>
+    <description>Grants access to the DeploymentLens app and its Apex endpoints.</description>
+</CustomPermission>
