@@ -1,160 +1,115 @@
 # DeploymentLens
 
-Native Salesforce app that surfaces component-level detail for deployments:
-a recent-deployments dashboard, deployment-Id search, and a drill-down showing
-component successes/failures and Apex test results — directly in the org's UI.
+See inside your Salesforce deployments — component-level successes, failures,
+and Apex test results, natively in the org UI.
 
-Built as SFDX source, API v67.0. Internal API names use the
-`Deployment_Overview` / `deploymentOverview` prefix for stability across
-upgrades; all user-facing labels say DeploymentLens.
+The native Deployment Status page tells you *that* a deployment ran.
+DeploymentLens shows you *what* it did: every component, every test class,
+every failure message, without leaving Salesforce.
 
----
-
-## 1. Installing into a target org
-
-**Option A — install the package (recommended for orgs you don't develop in):**
-
-Open the install URL you generated (see section 4) while logged into the
-target org, or run:
-
-```bash
-sf package install -p 04tXXXXXXXXXXXXXXX -o TargetOrg -w 10
-```
-
-**Option B — deploy the source directly (dev/scratch/sandbox):**
-
-```bash
-sf project deploy start -d force-app -o TargetOrg
-```
-
-Then, in either case, assign the permission set to every user who should see
-the app:
-
-```bash
-sf org assign permset -n Deployment_Overview_User -o TargetOrg
-```
+- **Recent deployments dashboard** — status, deploy vs. validation, initiator,
+  component progress, and test errors for the last 5/10/20 deployments.
+- **Deployment Id search** — paste any `0Af…` Id to jump straight to it.
+- **Component drill-down** — successes and failures in separate tabs with
+  metadata type, API name, and failure messages, plus every Apex test method's
+  pass/fail outcome, runtime, and stack trace.
 
 ---
 
-## 2. Configuring the target org (one-time, ~10 minutes)
+## Step 1 — Install the package
 
-The package ships the External Credential (`Deployment_Overview_Self_EC`,
-OAuth Client Credentials Flow), the Named Credential
-(`Deployment_Overview_Self`), and principal access via the permission set.
-Salesforce never packages secrets or org URLs, so three steps remain.
+Install into your org with one of the following URLs (log in first):
 
-**Open App Launcher → DeploymentLens Setup.** The Setup Assistant displays
-the exact org-specific values referenced below with copy buttons, and has a
-Test connection button — use it instead of typing URLs by hand.
+| Org type | Install URL |
+|---|---|
+| Production / Developer Edition | `https://login.salesforce.com/packaging/installPackage.apexp?p0=<PACKAGE_VERSION_ID>` |
+| Sandbox | `https://test.salesforce.com/packaging/installPackage.apexp?p0=<PACKAGE_VERSION_ID>` |
 
-### Step 1 — Create an External Client App
+> Replace `<PACKAGE_VERSION_ID>` with the current version Id (starts with `04t`)
+> from the [Releases](../../releases) page.
 
-Setup → External Client App Manager → New:
+After installing:
 
-- Enable OAuth. Callback URL: paste the value from the Setup tab (unused by
-  this flow, but the field is required).
-- OAuth scope: `api`.
-- Under **Settings**, enable the **Client Credentials Flow**.
-- Save, then copy the **consumer key** and **consumer secret**.
+1. **Assign the permission set**: Setup → Permission Sets →
+   **DeploymentLens User** → Manage Assignments → add your users.
+2. **Open the Setup Assistant**: App Launcher → **DeploymentLens Setup**.
+   It shows your org's exact configuration values with copy buttons and a
+   Test connection button — keep it open for steps 2–4.
 
-Now the step everyone misses — the Run-As user lives on a different tab:
+## Step 2 — Create an External Client App
 
-- Open the app → **Policies** tab → Edit → OAuth Policies →
-  **Client Credentials Flow**: enable it here too and set **Run As** to an
-  admin user with API access. Save.
+Setup → **External Client App Manager** → **New**:
 
-Wait 5–10 minutes: new OAuth apps propagate slowly, and authenticating
-immediately throws `invalid_client_id` even when everything is correct.
+1. External Client App Name: **DeploymentLens**. Contact Email: your email.
+2. Expand **API (Enable OAuth Settings)** and select the checkbox **Enable OAuth**.
+3. **Callback URL**: copy the value from the DeploymentLens Setup screen
+   (the field is required but unused by this flow).
+4. **OAuth Scopes** → from Available OAuth Scopes, add
+   **Manage user data via APIs (api)**.
+5. **Flow Enablement** → select **Client Credentials Flow**.
+6. Keep everything else default and click **Create**.
 
-### Step 2 — Point the External Credential at this org
+Then configure the policies (a separate tab — easy to miss):
 
-Setup → Named Credentials → External Credentials tab → **DeploymentLens
-Self EC** → Edit:
+7. Open the app → **Policies** tab → **Edit**.
+8. Under **OAuth Flows and External Client App Enhancements**, select
+   **Enable Client Credentials Flow** and set the **Run As** user to any
+   admin user. Save.
+9. Open **Consumer Key and Secret**, copy the consumer key (Client Id) and
+   consumer secret (Client Secret), and keep them ready.
 
-- Set the token endpoint (Identity Provider URL) to the value shown in the
-  Setup tab: `https://<this-org-domain>/services/oauth2/token`
-- Edit the **Admin** principal: paste the consumer key (Client Id) and
-  consumer secret (Client Secret) from Step 1, and save.
+> New OAuth apps take 5–10 minutes to propagate. If step 5 below fails with
+> `invalid_client_id`, wait and retry.
 
-### Step 3 — Point the Named Credential at this org
+## Step 3 — Point the External Credential at this org
 
-Setup → Named Credentials → **DeploymentLens Self** → Edit:
+Setup → Named Credentials → **External Credentials** tab →
+**DeploymentLens Self EC** → **Edit**:
 
-- Set URL to the org domain shown in the Setup tab
-  (always `https://…my.salesforce.com` — see the table below).
+1. Set the token endpoint (Identity Provider URL) to the value shown in the
+   DeploymentLens Setup screen: `https://<your-org-domain>/services/oauth2/token`
+2. Edit the **Admin** principal and paste the consumer key (Client Id) and
+   consumer secret (Client Secret) from Step 2.
 
-### Step 4 — Test
+## Step 4 — Point the Named Credential at this org
 
-Click **Test connection** in the Setup tab. Anything other than Success
-comes with a diagnosis (see Troubleshooting).
+Setup → Named Credentials → **DeploymentLens Self** → **Edit**:
 
-### Org URL formats
+1. Set **URL** to the org URL shown in the DeploymentLens Setup screen
+   (always `https://…my.salesforce.com`).
 
-Never copy the URL from the browser address bar (that gives the
-`.lightning.force.com` UI domain, which redirects API calls and breaks the
-Named Credential). Use the Setup tab's value or `sf org display`:
+> Never copy the URL from the browser address bar — that gives the
+> `.lightning.force.com` UI domain, which redirects API calls and breaks the
+> connection.
 
-| Org type          | URL pattern                                  |
-|-------------------|----------------------------------------------|
-| Production        | `acme.my.salesforce.com`                     |
-| Developer Edition | `acme-dev-ed.develop.my.salesforce.com`      |
-| Scratch org       | `random-words-1234.scratch.my.salesforce.com`|
-| Sandbox           | `acme--uat.sandbox.my.salesforce.com`        |
+## Step 5 — Test
 
----
+Click **Test connection** on the DeploymentLens Setup screen. On Success,
+open the **DeploymentLens** tab — you're done. Any failure includes a
+diagnosis; the table below has the full list.
 
-## 3. Troubleshooting
+## Troubleshooting
 
 | Symptom | Cause and fix |
 |---|---|
-| `invalid_grant: no client credentials user enabled` | No Run-As user on the External Client App. Policies tab → OAuth Policies → Client Credentials Flow → set Run As. |
-| `invalid_client_id` | OAuth app still propagating — wait 5–10 min and retry. |
-| HTTP 302 / "Redirected to …" | Named Credential URL points at the wrong host (usually `.lightning.force.com`). Use the Setup tab's org URL. |
-| HTTP 401 | Wrong consumer key/secret on the Admin principal, or Client Credentials Flow not enabled in the app's Settings. |
-| HTTP 403 | Run-As user lacks API Enabled / deploy-visibility permissions. |
-| "We couldn't access the credential(s)" | User's permission set lacks principal access (packaged — reassign `Deployment_Overview_User`), or the Admin principal was never saved with a secret. |
-| Empty dashboard, no error | No deployments in the last ~30 days — the Tooling API `DeployRequest` object only retains recent history. Deploy anything and refresh. |
+| `invalid_grant: no client credentials user enabled` | No Run-As user on the External Client App. Policies tab → OAuth Policies → Client Credentials Flow → set Run As (Step 2.8). |
+| `invalid_client_id` | OAuth app still propagating — wait 5–10 minutes and retry. |
+| HTTP 302 / "Redirected to …" | Named Credential URL points at the wrong host (usually `.lightning.force.com`). Use the Setup screen's org URL (Step 4). |
+| HTTP 401 | Wrong consumer key/secret on the Admin principal, or Client Credentials Flow not enabled in the app's settings (Step 2.5). |
+| HTTP 403 | Run-As user lacks API Enabled or deploy-visibility permissions. |
+| "We couldn't access the credential(s)" | User is missing the DeploymentLens User permission set, or the Admin principal was never saved with a secret. |
+| Empty dashboard, no error | No deployments in the last ~30 days — Salesforce only retains recent deployment history. Deploy anything and refresh. |
 
----
+## Notes and limits
 
-## 4. Creating the installable package (done once, from the Dev Hub)
+- Deployment history comes from the Salesforce Tooling API, which retains
+  roughly 30 days — DeploymentLens is an operational view, not a permanent
+  audit trail.
+- Each refresh consumes one API call against your org's allocations.
+- Very large deployments (10,000+ components) may exceed platform response
+  limits on the drill-down view.
 
-```bash
-sf package create --name "DeploymentLens" --package-type Unlocked --path force-app -v DevHub
-sf package version create -p "DeploymentLens" -x --code-coverage -w 30 -v DevHub
-sf package version promote -p "DeploymentLens@1.0.0-1" -v DevHub   # required for prod installs
-```
+## Contributing
 
-`version create` outputs the `04t…` Id. Install URL for any org:
-`https://login.salesforce.com/packaging/installPackage.apexp?p0=04t…`
-(use `test.salesforce.com` for sandboxes).
-
----
-
-## 5. Development
-
-```bash
-sf org login web --set-default-dev-hub --alias DevHub
-sf org create scratch -f config/project-scratch-def.json -a lensDev -d 7 --set-default
-sf project deploy start -d force-app
-sf org assign permset -n Deployment_Overview_User
-sf apex run test -w 10
-sf org open
-```
-
-Architecture: `deploymentOverview` LWC (container, App Builder-configurable
-row limit) → `deploymentList` / `deploymentDetail`; `setupAssistant` backs the
-Setup tab. Apex `DeploymentOverviewController` queries the Tooling API
-`DeployRequest` object for the list and
-`GET /services/data/v67.0/metadata/deployRequest/{id}?includeDetails=true`
-for the drill-down (payload key: `deployResult`), all through the Named
-Credential — no session Ids, AppExchange-security-review friendly.
-
-Known limits: `includeDetails=true` returns everything in one payload — very
-large deployments (10k+ components) can approach the 6 MB Apex heap limit.
-Tooling API history retention is ~30 days. Each refresh consumes an org API
-call; avoid aggressive polling.
-
-If the packaged External/Named Credential XML is rejected on deploy (schema
-varies slightly by release), delete those two files and create both records
-manually in Setup with the same API names — the Setup Assistant works either way.
+Development, scratch org, and packaging instructions are in
+[DEVELOPMENT.md](DEVELOPMENT.md). Issues and pull requests welcome.

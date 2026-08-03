@@ -2,24 +2,32 @@
     <lightning-card title="DeploymentLens — Setup Assistant" icon-name="standard:setup_assistant_step">
         <div class="slds-var-p-horizontal_medium slds-var-p-bottom_medium">
             <p class="slds-var-m-bottom_medium slds-text-color_weak">
-                The External Credential and Named Credential are already installed.
+                The External Credential and Named Credential are installed with the package.
                 Complete these three steps once per org, then test the connection.
             </p>
 
             <template lwc:if={info}>
                 <div class="slds-text-heading_small slds-var-m-bottom_x-small">Step 1 — Create an External Client App</div>
-                <p>Setup → External Client App Manager → New. Enable OAuth, enable the
-                <b>Client Credentials Flow</b>, set a <b>Run-As user</b> (an admin with API access),
-                scope <code>api</code>. Callback URL is unused by this flow — paste:</p>
+                <ol class="slds-list_ordered slds-var-m-bottom_small">
+                    <li>Setup → <b>External Client App Manager</b> → New.</li>
+                    <li>External Client App Name: <b>DeploymentLens</b>. Contact Email: your email.</li>
+                    <li>Expand <b>API (Enable OAuth Settings)</b> and check <b>Enable OAuth</b>.</li>
+                    <li>Callback URL — paste (required field, unused by this flow):</li>
+                </ol>
                 <div class="slds-box slds-box_x-small slds-var-m-vertical_x-small value-row">
                     <code>{info.callbackUrl}</code>
                     <lightning-button-icon icon-name="utility:copy_to_clipboard" alternative-text="Copy"
                         data-value={info.callbackUrl} onclick={handleCopy}></lightning-button-icon>
                 </div>
-                <p>Save, then copy the consumer key and secret. Wait 5–10 minutes for propagation.</p>
+                <ol class="slds-list_ordered slds-var-m-bottom_small" start="5">
+                    <li>OAuth Scopes → add <b>Manage user data via APIs (api)</b>.</li>
+                    <li>Flow Enablement → check <b>Client Credentials Flow</b>. Keep everything else default. Click <b>Create</b>.</li>
+                    <li>Open the app's <b>Policies</b> tab → Edit → OAuth Flows and External Client App Enhancements → check <b>Enable Client Credentials Flow</b> and set <b>Run As</b> to an admin user. Save.</li>
+                    <li>Back on Settings, open <b>Consumer Key and Secret</b> and copy both values. Wait 5–10 minutes before step 4 — new apps propagate slowly.</li>
+                </ol>
 
                 <div class="slds-text-heading_small slds-var-m-top_medium slds-var-m-bottom_x-small">Step 2 — Point the External Credential at this org</div>
-                <p>Setup → Named Credentials → External Credentials tab →
+                <p>Setup → Named Credentials → <b>External Credentials</b> tab →
                 <b>DeploymentLens Self EC</b> → Edit. Set the token endpoint to:</p>
                 <div class="slds-box slds-box_x-small slds-var-m-vertical_x-small value-row">
                     <code>{info.tokenEndpoint}</code>

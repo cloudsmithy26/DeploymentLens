@@ -2,39 +2,39 @@
 private class DeploymentOverviewSetupControllerTest {
 
     private class CodeMock implements HttpCalloutMock {
-        Integer code; String loc;
-        CodeMock(Integer code, String loc) { this.code = code; this.loc = loc; }
-        public HttpResponse respond(HttpRequest req) {
-            HttpResponse res = new HttpResponse();
-            res.setStatusCode(code);
-            if (loc != null) { res.setHeader('Location', loc); }
-            res.setBody('{}');
-            return res;
+        Integer statusCode; String redirectLocation;
+        CodeMock(Integer statusCode, String redirectLocation) { this.statusCode = statusCode; this.redirectLocation = redirectLocation; }
+        public HttpResponse respond(HttpRequest calloutRequest) {
+            HttpResponse mockResponse = new HttpResponse();
+            mockResponse.setStatusCode(statusCode);
+            if (redirectLocation != null) { mockResponse.setHeader('Location', redirectLocation); }
+            mockResponse.setBody('{}');
+            return mockResponse;
         }
     }
 
     @IsTest
     static void setupInfoReturnsOrgValues() {
-        Map<String, String> info = DeploymentOverviewSetupController.getSetupInfo();
-        System.assert(info.get('orgUrl').startsWith('https://'));
-        System.assert(info.get('tokenEndpoint').endsWith('/services/oauth2/token'));
-        System.assertEquals('Deployment_Overview_Self', info.get('namedCredential'));
+        Map<String, String> mapSetupInfo = DeploymentOverviewSetupController.getSetupInfo();
+        System.assert(mapSetupInfo.get('orgUrl').startsWith('https://'));
+        System.assert(mapSetupInfo.get('tokenEndpoint').endsWith('/services/oauth2/token'));
+        System.assertEquals('Deployment_Overview_Self', mapSetupInfo.get('namedCredential'));
     }
 
     @IsTest
     static void testConnectionSuccess() {
         Test.setMock(HttpCalloutMock.class, new CodeMock(200, null));
-        Map<String, String> r = DeploymentOverviewSetupController.testConnection();
-        System.assertEquals('Success', r.get('status'));
+        Map<String, String> mapTestResult = DeploymentOverviewSetupController.testConnection();
+        System.assertEquals('Success', mapTestResult.get('status'));
     }
 
     @IsTest
     static void testConnectionDiagnoses302() {
         Test.setMock(HttpCalloutMock.class, new CodeMock(302, 'https://correct.my.salesforce.com'));
-        Map<String, String> r = DeploymentOverviewSetupController.testConnection();
-        System.assertEquals('Failed', r.get('status'));
-        System.assert(r.get('detail').contains('302'));
-        System.assert(r.get('hint').contains('Named Credential URL'));
+        Map<String, String> mapTestResult = DeploymentOverviewSetupController.testConnection();
+        System.assertEquals('Failed', mapTestResult.get('status'));
+        System.assert(mapTestResult.get('detail').contains('302'));
+        System.assert(mapTestResult.get('hint').contains('Named Credential URL'));
     }
 
     @IsTest

@@ -35,68 +35,73 @@ public with sharing class DeploymentDetail {
         @AuraEnabled public Decimal timeMs;
     }
 
-    public static DeploymentDetail fromDeployResult(Map<String, Object> deployResult) {
-        DeploymentDetail d = new DeploymentDetail();
-        d.id = (String) deployResult.get('id');
-        d.status = (String) deployResult.get('status');
-        d.checkOnly = deployResult.get('checkOnly') == true;
-        d.numberComponentsTotal = toInt(deployResult.get('numberComponentsTotal'));
-        d.numberComponentErrors = toInt(deployResult.get('numberComponentErrors'));
-        d.numberTestsTotal = toInt(deployResult.get('numberTestsTotal'));
-        d.numberTestErrors = toInt(deployResult.get('numberTestErrors'));
+    public static DeploymentDetail fromDeployResult(Map<String, Object> mapDeployResult) {
+        DeploymentDetail deploymentDetail = new DeploymentDetail();
+        deploymentDetail.id = (String) mapDeployResult.get('id');
+        deploymentDetail.status = (String) mapDeployResult.get('status');
+        deploymentDetail.checkOnly = mapDeployResult.get('checkOnly') == true;
+        deploymentDetail.numberComponentsTotal = toInteger(mapDeployResult.get('numberComponentsTotal'));
+        deploymentDetail.numberComponentErrors = toInteger(mapDeployResult.get('numberComponentErrors'));
+        deploymentDetail.numberTestsTotal = toInteger(mapDeployResult.get('numberTestsTotal'));
+        deploymentDetail.numberTestErrors = toInteger(mapDeployResult.get('numberTestErrors'));
 
-        Map<String, Object> details = (Map<String, Object>) deployResult.get('details');
-        if (details == null) { return d; }
+        Map<String, Object> mapDetails = (Map<String, Object>) mapDeployResult.get('details');
+        if (mapDetails == null) { return deploymentDetail; }
 
-        for (Object o : asList(details.get('componentSuccesses'))) {
-            d.componentSuccesses.add(toComponent((Map<String, Object>) o));
+        for (Object successItem : asList(mapDetails.get('componentSuccesses'))) {
+            deploymentDetail.componentSuccesses.add(
+                toComponentResult((Map<String, Object>) successItem));
         }
-        for (Object o : asList(details.get('componentFailures'))) {
-            d.componentFailures.add(toComponent((Map<String, Object>) o));
+        for (Object failureItem : asList(mapDetails.get('componentFailures'))) {
+            deploymentDetail.componentFailures.add(
+                toComponentResult((Map<String, Object>) failureItem));
         }
 
-        Map<String, Object> runTestResult = (Map<String, Object>) details.get('runTestResult');
-        if (runTestResult != null) {
-            for (Object o : asList(runTestResult.get('successes'))) {
-                d.testSuccesses.add(toTest((Map<String, Object>) o, 'Pass'));
+        Map<String, Object> mapRunTestResult = (Map<String, Object>) mapDetails.get('runTestResult');
+        if (mapRunTestResult != null) {
+            for (Object testSuccessItem : asList(mapRunTestResult.get('successes'))) {
+                deploymentDetail.testSuccesses.add(
+                    toTestResult((Map<String, Object>) testSuccessItem, 'Pass'));
             }
-            for (Object o : asList(runTestResult.get('failures'))) {
-                d.testFailures.add(toTest((Map<String, Object>) o, 'Fail'));
+            for (Object testFailureItem : asList(mapRunTestResult.get('failures'))) {
+                deploymentDetail.testFailures.add(
+                    toTestResult((Map<String, Object>) testFailureItem, 'Fail'));
             }
         }
-        return d;
+        return deploymentDetail;
     }
 
-    private static ComponentResult toComponent(Map<String, Object> m) {
-        ComponentResult c = new ComponentResult();
-        c.componentType = (String) m.get('componentType');
-        c.fullName = (String) m.get('fullName');
-        c.fileName = (String) m.get('fileName');
-        c.problem = (String) m.get('problem');
-        c.problemType = (String) m.get('problemType');
-        c.created = m.get('created') == true;
-        c.changed = m.get('changed') == true;
-        c.deleted = m.get('deleted') == true;
-        return c;
+    private static ComponentResult toComponentResult(Map<String, Object> mapComponentRecord) {
+        ComponentResult componentResult = new ComponentResult();
+        componentResult.componentType = (String) mapComponentRecord.get('componentType');
+        componentResult.fullName = (String) mapComponentRecord.get('fullName');
+        componentResult.fileName = (String) mapComponentRecord.get('fileName');
+        componentResult.problem = (String) mapComponentRecord.get('problem');
+        componentResult.problemType = (String) mapComponentRecord.get('problemType');
+        componentResult.created = mapComponentRecord.get('created') == true;
+        componentResult.changed = mapComponentRecord.get('changed') == true;
+        componentResult.deleted = mapComponentRecord.get('deleted') == true;
+        return componentResult;
     }
 
-    private static TestResult toTest(Map<String, Object> m, String outcome) {
-        TestResult t = new TestResult();
-        t.apexClassName = (String) m.get('name');
-        t.methodName = (String) m.get('methodName');
-        t.message = (String) m.get('message');
-        t.stackTrace = (String) m.get('stackTrace');
-        t.outcome = outcome;
-        Object timeVal = m.get('time');
-        t.timeMs = timeVal == null ? 0 : Decimal.valueOf(String.valueOf(timeVal));
-        return t;
+    private static TestResult toTestResult(Map<String, Object> mapTestRecord, String outcome) {
+        TestResult testResult = new TestResult();
+        testResult.apexClassName = (String) mapTestRecord.get('name');
+        testResult.methodName = (String) mapTestRecord.get('methodName');
+        testResult.message = (String) mapTestRecord.get('message');
+        testResult.stackTrace = (String) mapTestRecord.get('stackTrace');
+        testResult.outcome = outcome;
+        Object testTimeValue = mapTestRecord.get('time');
+        testResult.timeMs = testTimeValue == null ? 0
+            : Decimal.valueOf(String.valueOf(testTimeValue));
+        return testResult;
     }
 
-    private static List<Object> asList(Object o) {
-        return o == null ? new List<Object>() : (List<Object>) o;
+    private static List<Object> asList(Object listValue) {
+        return listValue == null ? new List<Object>() : (List<Object>) listValue;
     }
 
-    private static Integer toInt(Object o) {
-        return o == null ? 0 : Integer.valueOf(String.valueOf(o));
+    private static Integer toInteger(Object fieldValue) {
+        return fieldValue == null ? 0 : Integer.valueOf(String.valueOf(fieldValue));
     }
 }

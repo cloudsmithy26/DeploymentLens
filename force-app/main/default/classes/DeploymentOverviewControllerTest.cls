@@ -20,12 +20,12 @@ private class DeploymentOverviewControllerTest {
             this.statusCode = statusCode;
             this.body = body;
         }
-        public HttpResponse respond(HttpRequest req) {
-            HttpResponse res = new HttpResponse();
-            res.setStatusCode(statusCode);
-            res.setHeader('Content-Type', 'application/json');
-            res.setBody(body);
-            return res;
+        public HttpResponse respond(HttpRequest calloutRequest) {
+            HttpResponse mockResponse = new HttpResponse();
+            mockResponse.setStatusCode(statusCode);
+            mockResponse.setHeader('Content-Type', 'application/json');
+            mockResponse.setBody(body);
+            return mockResponse;
         }
     }
 
@@ -60,44 +60,44 @@ private class DeploymentOverviewControllerTest {
     static void recentDeploymentsParsesToolingResponse() {
         Test.setMock(HttpCalloutMock.class, new ApiMock(200, toolingQueryBody()));
         Test.startTest();
-        List<DeploymentSummary> rows = DeploymentOverviewController.getRecentDeployments(10);
+        List<DeploymentSummary> listDeployments = DeploymentOverviewController.getRecentDeployments(10);
         Test.stopTest();
-        System.assertEquals(1, rows.size());
-        System.assertEquals('Succeeded', rows[0].status);
-        System.assertEquals('Ven Reddy', rows[0].createdByName);
-        System.assertEquals(12, rows[0].componentsTotal);
+        System.assertEquals(1, listDeployments.size());
+        System.assertEquals('Succeeded', listDeployments[0].status);
+        System.assertEquals('Ven Reddy', listDeployments[0].createdByName);
+        System.assertEquals(12, listDeployments[0].componentsTotal);
     }
 
     @IsTest
     static void recentDeploymentsClampsInvalidLimit() {
         Test.setMock(HttpCalloutMock.class, new ApiMock(200, toolingQueryBody()));
         Test.startTest();
-        List<DeploymentSummary> rows = DeploymentOverviewController.getRecentDeployments(9999);
+        List<DeploymentSummary> listDeployments = DeploymentOverviewController.getRecentDeployments(9999);
         Test.stopTest();
-        System.assertEquals(1, rows.size(), 'Clamped limit must still return data');
+        System.assertEquals(1, listDeployments.size(), 'Clamped limit must still return data');
     }
 
     @IsTest
     static void findDeploymentByIdReturnsRow() {
         Test.setMock(HttpCalloutMock.class, new ApiMock(200, toolingQueryBody()));
         Test.startTest();
-        List<DeploymentSummary> rows = DeploymentOverviewController.findDeploymentById(DEPLOY_ID);
+        List<DeploymentSummary> listDeployments = DeploymentOverviewController.findDeploymentById(DEPLOY_ID);
         Test.stopTest();
-        System.assertEquals(DEPLOY_ID, rows[0].id);
+        System.assertEquals(DEPLOY_ID, listDeployments[0].id);
     }
 
     @IsTest
     static void detailsParseDeployResultPayload() {
         Test.setMock(HttpCalloutMock.class, new ApiMock(200, deployRequestBody()));
         Test.startTest();
-        DeploymentDetail d = DeploymentOverviewController.getDeploymentDetails(DEPLOY_ID);
+        DeploymentDetail deploymentDetail = DeploymentOverviewController.getDeploymentDetails(DEPLOY_ID);
         Test.stopTest();
-        System.assertEquals(1, d.componentSuccesses.size());
-        System.assertEquals(1, d.componentFailures.size());
-        System.assertEquals('Compile error', d.componentFailures[0].problem);
-        System.assertEquals(1, d.testSuccesses.size());
-        System.assertEquals(1, d.testFailures.size());
-        System.assertEquals('Fail', d.testFailures[0].outcome);
+        System.assertEquals(1, deploymentDetail.componentSuccesses.size());
+        System.assertEquals(1, deploymentDetail.componentFailures.size());
+        System.assertEquals('Compile error', deploymentDetail.componentFailures[0].problem);
+        System.assertEquals(1, deploymentDetail.testSuccesses.size());
+        System.assertEquals(1, deploymentDetail.testFailures.size());
+        System.assertEquals('Fail', deploymentDetail.testFailures[0].outcome);
     }
 
     @IsTest
@@ -105,7 +105,7 @@ private class DeploymentOverviewControllerTest {
         Boolean threw = false;
         try {
             DeploymentOverviewController.getDeploymentDetails('001abcDEF');
-        } catch (AuraHandledException e) {
+        } catch (AuraHandledException handledException) {
             threw = true;
         }
         System.assert(threw, 'Non-0Af Ids must be rejected before any callout');
@@ -113,12 +113,12 @@ private class DeploymentOverviewControllerTest {
 
     @IsTest
     static void accessCheckBlocksUnpermittedUsers() {
-        Profile std = [SELECT Id FROM Profile WHERE Name = 'Standard User' LIMIT 1];
+        Profile standardUserProfile = [SELECT Id FROM Profile WHERE Name = 'Standard User' LIMIT 1];
         User noPerm = new User(
             Alias = 'noperm', LastName = 'NoPerm',
             Email = 'noperm@example.com',
             Username = 'noperm' + DateTime.now().getTime() + '@example.com',
-            ProfileId = std.Id, EmailEncodingKey = 'UTF-8',
+            ProfileId = standardUserProfile.Id, EmailEncodingKey = 'UTF-8',
             LanguageLocaleKey = 'en_US', LocaleSidKey = 'en_US',
             TimeZoneSidKey = 'America/Los_Angeles');
         insert noPerm;
@@ -129,7 +129,7 @@ private class DeploymentOverviewControllerTest {
             DeploymentOverviewController.bypassAccessCheck = false;
             try {
                 DeploymentOverviewController.getRecentDeployments(5);
-            } catch (AuraHandledException e) {
+            } catch (AuraHandledException handledException) {
                 threw = true;
             } finally {
                 DeploymentOverviewController.bypassAccessCheck = true;
@@ -145,7 +145,7 @@ private class DeploymentOverviewControllerTest {
         Test.startTest();
         try {
             DeploymentOverviewController.getRecentDeployments(5);
-        } catch (AuraHandledException e) {
+        } catch (AuraHandledException handledException) {
             threw = true;
         }
         Test.stopTest();

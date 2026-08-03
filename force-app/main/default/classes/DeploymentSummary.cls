@@ -16,28 +16,29 @@ public with sharing class DeploymentSummary {
     @AuraEnabled public Integer testsCompleted;
     @AuraEnabled public Integer testErrors;
 
-    public static DeploymentSummary fromToolingRecord(Map<String, Object> rec) {
-        DeploymentSummary s = new DeploymentSummary();
-        s.id = (String) rec.get('Id');
-        s.status = (String) rec.get('Status');
-        s.checkOnly = rec.get('CheckOnly') == true;
-        s.createdDate = (String) rec.get('CreatedDate');
-        s.startDate = (String) rec.get('StartDate');
-        s.completedDate = (String) rec.get('CompletedDate');
-        s.componentsTotal = toInt(rec.get('NumberComponentsTotal'));
-        s.componentsDeployed = toInt(rec.get('NumberComponentsDeployed'));
-        s.componentErrors = toInt(rec.get('NumberComponentErrors'));
-        s.testsTotal = toInt(rec.get('NumberTestsTotal'));
-        s.testsCompleted = toInt(rec.get('NumberTestsCompleted'));
-        s.testErrors = toInt(rec.get('NumberTestErrors'));
-        Object createdBy = rec.get('CreatedBy');
-        if (createdBy instanceof Map<String, Object>) {
-            s.createdByName = (String) ((Map<String, Object>) createdBy).get('Name');
+    public static DeploymentSummary fromToolingRecord(Map<String, Object> mapDeployRecord) {
+        DeploymentSummary deploymentSummary = new DeploymentSummary();
+        deploymentSummary.id = (String) mapDeployRecord.get('Id');
+        deploymentSummary.status = (String) mapDeployRecord.get('Status');
+        deploymentSummary.checkOnly = mapDeployRecord.get('CheckOnly') == true;
+        deploymentSummary.createdDate = (String) mapDeployRecord.get('CreatedDate');
+        deploymentSummary.startDate = (String) mapDeployRecord.get('StartDate');
+        deploymentSummary.completedDate = (String) mapDeployRecord.get('CompletedDate');
+        deploymentSummary.componentsTotal = toInteger(mapDeployRecord.get('NumberComponentsTotal'));
+        deploymentSummary.componentsDeployed = toInteger(mapDeployRecord.get('NumberComponentsDeployed'));
+        deploymentSummary.componentErrors = toInteger(mapDeployRecord.get('NumberComponentErrors'));
+        deploymentSummary.testsTotal = toInteger(mapDeployRecord.get('NumberTestsTotal'));
+        deploymentSummary.testsCompleted = toInteger(mapDeployRecord.get('NumberTestsCompleted'));
+        deploymentSummary.testErrors = toInteger(mapDeployRecord.get('NumberTestErrors'));
+        Object createdByValue = mapDeployRecord.get('CreatedBy');
+        if (createdByValue instanceof Map<String, Object>) {
+            deploymentSummary.createdByName =
+                (String) ((Map<String, Object>) createdByValue).get('Name');
         }
-        return s;
+        return deploymentSummary;
     }
 
-    private static Integer toInt(Object o) {
-        return o == null ? 0 : Integer.valueOf(String.valueOf(o));
+    private static Integer toInteger(Object fieldValue) {
+        return fieldValue == null ? 0 : Integer.valueOf(String.valueOf(fieldValue));
     }
 }
