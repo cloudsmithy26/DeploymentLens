@@ -1,15 +1,20 @@
 {
   "packageDirectories": [
     {
+      "versionName": "ver 0.1",
+      "versionNumber": "0.1.0.NEXT",
       "path": "force-app",
       "default": true,
       "package": "DeploymentLens",
-      "versionName": "ver 1.0",
-      "versionNumber": "1.0.0.NEXT"
+      "versionDescription": ""
     }
   ],
   "name": "deploymentlens",
   "namespace": "",
   "sfdcLoginUrl": "https://login.salesforce.com",
-  "sourceApiVersion": "67.0"
+  "sourceApiVersion": "67.0",
+  "packageAliases": {
+    "DeploymentLens": "0Hobm00000055ThCAI",
+    "DeploymentLens@0.1.0-1": "04tbm000000aXzxAAE"
+  }
 }

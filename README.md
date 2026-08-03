@@ -22,8 +22,8 @@ Install into your org with one of the following URLs (log in first):
 
 | Org type | Install URL |
 |---|---|
-| Production / Developer Edition | `https://login.salesforce.com/packaging/installPackage.apexp?p0=<PACKAGE_VERSION_ID>` |
-| Sandbox | `https://test.salesforce.com/packaging/installPackage.apexp?p0=<PACKAGE_VERSION_ID>` |
+| Production / Developer Edition | `https://login.salesforce.com/packaging/installPackage.apexp?p0=04tbm000000aXzxAAE` |
+| Sandbox | `https://test.salesforce.com/packaging/installPackage.apexp?p0=04tbm000000aXzxAAE` |
 
 > Replace `<PACKAGE_VERSION_ID>` with the current version Id (starts with `04t`)
 > from the [Releases](../../releases) page.
