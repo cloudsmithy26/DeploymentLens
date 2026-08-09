@@ -118,6 +118,12 @@ public with sharing class DeploymentOverviewController {
         HttpResponse calloutResponse;
         try {
             calloutResponse = new Http().send(calloutRequest);
+            // The shared Client Credentials token can go stale between calls (e.g. the
+            // Run-As user's session was invalidated out-of-band). Retrying once gives the
+            // External Credential a chance to detect the 401 and mint a fresh token.
+            if (calloutResponse.getStatusCode() == 401) {
+                calloutResponse = new Http().send(calloutRequest);
+            }
         } catch (System.CalloutException calloutException) {
             throw new AuraHandledException('Callout failed: ' + calloutException.getMessage()
                 + '. Verify the Deployment_Overview_Self Named Credential is configured.');
