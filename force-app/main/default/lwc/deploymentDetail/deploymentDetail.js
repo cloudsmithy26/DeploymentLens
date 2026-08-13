@@ -1,5 +1,6 @@
 import { LightningElement, api } from 'lwc';
 import getDeploymentDetails from '@salesforce/apex/DeploymentOverviewController.getDeploymentDetails';
+import { callApexWithRetry } from 'c/apexCalloutRetry';
 
 const SUCCESS_COLUMNS = [
     { label: 'Type', fieldName: 'componentType', initialWidth: 180 },
@@ -97,7 +98,7 @@ export default class DeploymentDetail extends LightningElement {
         this.error = undefined;
         this.detail = undefined;
         try {
-            this.detail = await getDeploymentDetails({ deploymentId: this._deploymentId });
+            this.detail = await callApexWithRetry(getDeploymentDetails, { deploymentId: this._deploymentId });
         } catch (e) {
             this.error = (e && e.body && e.body.message) || 'Unable to load deployment detail.';
         } finally {
