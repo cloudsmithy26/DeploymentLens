@@ -16,14 +16,20 @@
  *   5. GET the resulting PDF from the pre-signed downloadUri in the final
  *      poll response
  *
- * AUTH: token acquisition is handled by the Named Credential / External
- * Credential ("Adobe_PDF_Services", OAuth 2.0 Client Credentials with Client
- * Secret Flow) — Salesforce fetches, caches, and attaches the Bearer token
- * automatically to every callout made through callout:Adobe_PDF_Services,
- * so this class no longer calls /token or sets an Authorization header
- * itself. Adobe additionally requires an X-API-Key header set to the Client
- * ID (a separate, non-secret requirement on top of standard OAuth), which
- * this class still sets manually via getClientId().
+ * AUTH: token acquisition for calls that stay within the Named Credential's
+ * domain (createAsset, submitCreatePdfJob) is handled by the Named
+ * Credential / External Credential ("Adobe_PDF_Services", OAuth 2.0 Client
+ * Credentials with Client Secret Flow) — Salesforce fetches, caches, and
+ * attaches the Bearer token automatically to every callout made through
+ * callout:Adobe_PDF_Services. However, Adobe's job-status polling URL often
+ * lands on a different regional host (e.g. pdf-services-ue1.adobe.io rather
+ * than pdf-services.adobe.io), which the Named Credential doesn't cover —
+ * Salesforce won't auto-attach the token to a call that doesn't go through
+ * it. For that one call, this class fetches a token manually via
+ * getAccessTokenManually() and attaches it itself. Adobe additionally
+ * requires an X-API-Key header set to the Client ID (a separate, non-secret
+ * requirement on top of standard OAuth) on every call, which this class
+ * always sets manually via getClientId().
  *
  * SETUP REQUIRED BEFORE USE:
  * 1. Get Adobe PDF Services credentials (client_id / client_secret) from
@@ -43,10 +49,11 @@
  * 3. Named Credential "Adobe_PDF_Services": URL = https://pdf-services.adobe.io,
  *    linked to the External Credential above, "Generate Authorization Header"
  *    and "Enabled for Callouts" both checked.
- * 4. Store the Client ID somewhere Apex can read it (Custom Metadata Type is
- *    a good fit — it isn't secret the way the Client Secret is, since it's
- *    just an identifier sent as a plain header) and wire up getClientId()
- *    below.
+ * 4. Store the Client ID and Client Secret somewhere Apex can read them
+ *    (Custom Metadata Type is a good fit) and wire up getClientId(),
+ *    getClientSecret(), and getScope() below. The Client ID is used as a
+ *    plain header on every call; the Client Secret and scope are only used
+ *    by getAccessTokenManually() for the poll step's cross-domain call.
  * 5. Remote Site Settings for the pre-signed upload/download URLs: these
  *    land on Adobe's storage domain, which varies per call and isn't known
  *    ahead of time, so a Named Credential can't pin to it. Add a Remote Site
@@ -233,15 +240,28 @@ public with sharing class DocConversionProvider {
      * sleep, so this retries immediately rather than waiting between polls —
      * fine for fast jobs, but see the class header note for a more robust
      * async alternative.
+     *
+     * IMPORTANT: the polling URL Adobe returns often lands on a different
+     * host than the Named Credential's configured domain (e.g.
+     * pdf-services-ue1.adobe.io instead of pdf-services.adobe.io — Adobe
+     * routes jobs to a specific regional endpoint). Salesforce only
+     * auto-attaches the OAuth bearer token to calls that go through
+     * callout:Adobe_PDF_Services, so a direct call to that other host gets
+     * no Authorization header at all — which is what a 403 "OAuth token is
+     * missing" means. This method fetches a token manually (via
+     * getAccessTokenManually()) and attaches it itself for exactly that
+     * reason.
      */
     private static Map<String, Object> pollJobUntilDone(String pollingUrl) {
         Map<String, Object> lastResult = new Map<String, Object>{ 'status' => 'unknown' };
+        String accessToken = getAccessTokenManually();
 
         for (Integer attempt = 0; attempt < MAX_POLL_ATTEMPTS; attempt++) {
             HttpRequest req = new HttpRequest();
             req.setEndpoint(pollingUrl);
             req.setMethod('GET');
             req.setHeader('X-API-Key', getClientId());
+            req.setHeader('Authorization', 'Bearer ' + accessToken);
             req.setTimeout(TIMEOUT_MS);
 
             HttpResponse res = new Http().send(req);
@@ -259,7 +279,12 @@ public with sharing class DocConversionProvider {
     }
 
     /**
-     * Downloads the resulting PDF from the pre-signed downloadUri.
+     * Downloads the resulting PDF from the pre-signed downloadUri. This is
+     * usually unauthenticated (a signed storage URL, same pattern as the
+     * upload step), but the Authorization header is attached defensively in
+     * case Adobe's download endpoint also lands outside the Named
+     * Credential's domain and expects it — a stray header on a URL that
+     * doesn't need it is harmless.
      */
     private static Blob downloadFile(String downloadUri) {
         HttpRequest req = new HttpRequest();
@@ -285,6 +310,61 @@ public with sharing class DocConversionProvider {
         // Example: Adobe_Api_Credential__mdt cred = Adobe_Api_Credential__mdt.getInstance('Default');
         // return cred != null ? cred.Client_Id__c : null;
         return null; // placeholder — wire this up before use
+    }
+
+    /**
+     * Retrieves the Adobe client_secret. Only needed for
+     * getAccessTokenManually() below — the Named Credential still manages
+     * auth for calls that stay within its domain, so this isn't a full
+     * reversion to manual token handling everywhere, just for the one call
+     * that has to leave it. Same storage caveat as getClientId(): wire this
+     * up to wherever you store secrets (Custom Metadata Type / Protected
+     * Custom Setting), not source-controlled directly.
+     */
+    private static String getClientSecret() {
+        // Example: Adobe_Api_Credential__mdt cred = Adobe_Api_Credential__mdt.getInstance('Default');
+        // return cred != null ? cred.Client_Secret__c : null;
+        return null; // placeholder — wire this up before use
+    }
+
+    /**
+     * Retrieves the scope string Adobe expects for your specific credential.
+     * Check the "Generate access token" button on your credential's page in
+     * the Adobe Developer Console for the exact value — commonly something
+     * like "openid,AdobeID,DCAPI" for PDF Services, but this varies by how
+     * the credential was provisioned.
+     */
+    private static String getScope() {
+        return null; // placeholder — wire this up before use
+    }
+
+    /**
+     * Manually exchanges client_id/client_secret for a bearer token by
+     * calling Adobe's IMS endpoint directly. Used only for callouts that
+     * land outside the Named Credential's configured domain (currently just
+     * the poll step — see pollJobUntilDone() above). Requires a Remote Site
+     * Setting for ims-na1.adobelogin.com, since this bypasses the Named
+     * Credential entirely.
+     */
+    private static String getAccessTokenManually() {
+        HttpRequest req = new HttpRequest();
+        req.setEndpoint('https://ims-na1.adobelogin.com/ims/token/v3');
+        req.setMethod('POST');
+        req.setHeader('Content-Type', 'application/x-www-form-urlencoded');
+        req.setTimeout(TIMEOUT_MS);
+
+        String body = 'grant_type=client_credentials'
+            + '&client_id=' + EncodingUtil.urlEncode(getClientId(), 'UTF-8')
+            + '&client_secret=' + EncodingUtil.urlEncode(getClientSecret(), 'UTF-8')
+            + '&scope=' + EncodingUtil.urlEncode(getScope(), 'UTF-8');
+        req.setBody(body);
+
+        HttpResponse res = new Http().send(req);
+        if (res.getStatusCode() != 200) {
+            throw new CalloutException('Manual token request failed: HTTP ' + res.getStatusCode() + ' ' + res.getBody());
+        }
+        Map<String, Object> parsed = (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
+        return (String) parsed.get('access_token');
     }
 
     private static String stripExtension(String fileName) {
