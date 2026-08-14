@@ -7,10 +7,7 @@ private class DocToPdfControllerTest {
             HttpResponse res = new HttpResponse();
             res.setHeader('Content-Type', 'application/json');
 
-            if (endpoint.endsWith('/token')) {
-                res.setStatusCode(200);
-                res.setBody('{"access_token":"fake-token","expires_in":3600}');
-            } else if (endpoint.endsWith('/assets')) {
+            if (endpoint.endsWith('/assets')) {
                 res.setStatusCode(200);
                 res.setBody('{"uploadUri":"https://fake-storage.example.com/upload/abc123","assetID":"urn:aaid:AS:fake-asset-id"}');
             } else if (endpoint.contains('fake-storage.example.com/upload')) {
@@ -38,10 +35,7 @@ private class DocToPdfControllerTest {
             HttpResponse res = new HttpResponse();
             res.setHeader('Content-Type', 'application/json');
 
-            if (endpoint.endsWith('/token')) {
-                res.setStatusCode(200);
-                res.setBody('{"access_token":"fake-token","expires_in":3600}');
-            } else if (endpoint.endsWith('/assets')) {
+            if (endpoint.endsWith('/assets')) {
                 res.setStatusCode(200);
                 res.setBody('{"uploadUri":"https://fake-storage.example.com/upload/abc123","assetID":"urn:aaid:AS:fake-asset-id"}');
             } else if (endpoint.contains('fake-storage.example.com/upload')) {

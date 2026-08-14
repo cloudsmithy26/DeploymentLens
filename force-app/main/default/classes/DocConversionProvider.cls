@@ -3,44 +3,55 @@
  * -----------------------
  * Performs the conversion of a .docx file to PDF using Adobe's PDF Services
  * API (Create PDF operation). Same public interface as before
- * (convertDocxToPdf) so ConvertDocToPdfService.cls doesn't need to change.
+ * (convertDocxToPdf) so DocToPdfController.cls doesn't need to change.
  *
  * Adobe's flow is a multi-step ASYNC job, not a single request/response:
- *   1. Get an access token (client_id + client_secret -> bearer token)
- *   2. Create an "asset" placeholder -> get back an assetID + a pre-signed
+ *   1. Create an "asset" placeholder -> get back an assetID + a pre-signed
  *      uploadUri
- *   3. PUT the raw docx bytes to that uploadUri (direct to Adobe's storage,
+ *   2. PUT the raw docx bytes to that uploadUri (direct to Adobe's storage,
  *      not the API domain)
- *   4. Submit a Create PDF job referencing the assetID -> get back a polling
+ *   3. Submit a Create PDF job referencing the assetID -> get back a polling
  *      URL (Location header)
- *   5. Poll that URL until the job status is "done" (or "failed")
- *   6. GET the resulting PDF from the pre-signed downloadUri in the final
+ *   4. Poll that URL until the job status is "done" (or "failed")
+ *   5. GET the resulting PDF from the pre-signed downloadUri in the final
  *      poll response
+ *
+ * AUTH: token acquisition is handled by the Named Credential / External
+ * Credential ("Adobe_PDF_Services", OAuth 2.0 Client Credentials with Client
+ * Secret Flow) — Salesforce fetches, caches, and attaches the Bearer token
+ * automatically to every callout made through callout:Adobe_PDF_Services,
+ * so this class no longer calls /token or sets an Authorization header
+ * itself. Adobe additionally requires an X-API-Key header set to the Client
+ * ID (a separate, non-secret requirement on top of standard OAuth), which
+ * this class still sets manually via getClientId().
  *
  * SETUP REQUIRED BEFORE USE:
  * 1. Get Adobe PDF Services credentials (client_id / client_secret) from
  *    https://developer.adobe.com/document-services/ -> "Get Credentials".
- * 2. Named Credential called "Adobe_PDF_Services" pointing to
- *    https://pdf-services.adobe.io, Identity Type "Named Principal",
- *    no built-in auth protocol (this class manages the bearer token itself,
- *    since Adobe's token endpoint takes client_id/client_secret as a plain
- *    form-urlencoded POST rather than a Named-Credential-native OAuth flow).
- * 3. Store the client_id / client_secret somewhere safe (Custom Metadata
- *    Type or Protected Custom Setting) and wire up getClientId() /
- *    getClientSecret() below.
- * 4. Remote Site Settings for the pre-signed upload/download URLs: these
+ * 2. External Credential "Adobe_PDF_Services": Authentication Protocol =
+ *    OAuth 2.0, Authentication Flow Type = Client Credentials with Client
+ *    Secret Flow, Identity Provider URL = https://pdf-services.adobe.io/token,
+ *    "Pass client credentials in request body" checked. Add a Principal with
+ *    the Client ID / Client Secret, and grant access via External Credential
+ *    Principal Access.
+ * 3. Named Credential "Adobe_PDF_Services": URL = https://pdf-services.adobe.io,
+ *    linked to the External Credential above, "Generate Authorization Header"
+ *    and "Enabled for Callouts" both checked.
+ * 4. Store the Client ID somewhere Apex can read it (Custom Metadata Type is
+ *    a good fit — it isn't secret the way the Client Secret is, since it's
+ *    just an identifier sent as a plain header) and wire up getClientId()
+ *    below.
+ * 5. Remote Site Settings for the pre-signed upload/download URLs: these
  *    land on Adobe's storage domain, which varies per call and isn't known
  *    ahead of time, so a Named Credential can't pin to it. Add a Remote Site
  *    Setting covering Adobe's storage domain pattern (check the actual
  *    uploadUri/downloadUri host the first time you run this and allowlist
  *    it), or ask your Salesforce admin about wildcard Remote Site Settings.
- * 5. Apex has no synchronous sleep — the poll loop below retries immediately
+ * 6. Apex has no synchronous sleep — the poll loop below retries immediately
  *    in a bounded loop rather than waiting between polls. That's fine for
  *    Adobe's typically-fast conversions, but for a more robust production
  *    setup, consider moving the poll step to a Queueable chain (or
- *    Continuation) instead of doing it inline in the REST response.
- * ID: 82d8ae29b9d04d598aeec186b5599ec1
- * Sec: p8e-h-t1Um07qDMh-3CHQe9CSVwhh06dAMvK
+ *    Continuation) instead of doing it inline in the response.
  */
 public with sharing class DocConversionProvider {
 
@@ -66,13 +77,8 @@ public with sharing class DocConversionProvider {
 
     public static ConversionResult convertDocxToPdf(String sourceFileName, String base64Docx) {
         try {
-            String accessToken = getAccessToken();
-            if (String.isBlank(accessToken)) {
-                return new ConversionResult(false, null, null, 'Failed to obtain Adobe access token.');
-            }
-
             // Step 1: create the asset placeholder
-            Map<String, String> assetInfo = createAsset(accessToken);
+            Map<String, String> assetInfo = createAsset();
             String uploadUri = assetInfo.get('uploadUri');
             String assetId = assetInfo.get('assetID');
             if (String.isBlank(uploadUri) || String.isBlank(assetId)) {
@@ -84,13 +90,13 @@ public with sharing class DocConversionProvider {
             uploadFile(uploadUri, docxBytes);
 
             // Step 3: submit the Create PDF job
-            String pollingUrl = submitCreatePdfJob(accessToken, assetId);
+            String pollingUrl = submitCreatePdfJob(assetId);
             if (String.isBlank(pollingUrl)) {
                 return new ConversionResult(false, null, null, 'Adobe did not return a job polling URL.');
             }
 
             // Step 4: poll until done (or we run out of attempts)
-            Map<String, Object> jobResult = pollJobUntilDone(accessToken, pollingUrl);
+            Map<String, Object> jobResult = pollJobUntilDone(pollingUrl);
             String status = (String) jobResult.get('status');
 
             if (status == 'done') {
@@ -118,38 +124,16 @@ public with sharing class DocConversionProvider {
     }
 
     /**
-     * Exchanges client_id/client_secret for a bearer access token.
-     * POST /token, form-urlencoded body.
-     */
-    private static String getAccessToken() {
-        HttpRequest req = new HttpRequest();
-        req.setEndpoint(NAMED_CREDENTIAL + '/token');
-        req.setMethod('POST');
-        req.setHeader('Content-Type', 'application/x-www-form-urlencoded');
-        req.setTimeout(TIMEOUT_MS);
-
-        String body = 'client_id=' + EncodingUtil.urlEncode(getClientId(), 'UTF-8')
-            + '&client_secret=' + EncodingUtil.urlEncode(getClientSecret(), 'UTF-8');
-        req.setBody(body);
-
-        HttpResponse res = new Http().send(req);
-        if (res.getStatusCode() != 200) {
-            throw new CalloutException('Token request failed: HTTP ' + res.getStatusCode() + ' ' + res.getBody());
-        }
-        Map<String, Object> parsed = (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
-        return (String) parsed.get('access_token');
-    }
-
-    /**
      * Creates an asset placeholder for the file we're about to upload.
      * POST /assets -> { uploadUri, assetID }
+     * No manual Authorization header — the Named Credential attaches the
+     * Bearer token automatically.
      */
-    private static Map<String, String> createAsset(String accessToken) {
+    private static Map<String, String> createAsset() {
         HttpRequest req = new HttpRequest();
         req.setEndpoint(NAMED_CREDENTIAL + '/assets');
         req.setMethod('POST');
         req.setHeader('X-API-Key', getClientId());
-        req.setHeader('Authorization', 'Bearer ' + accessToken);
         req.setHeader('Content-Type', 'application/json');
         req.setTimeout(TIMEOUT_MS);
         req.setBody(JSON.serialize(new Map<String, String>{ 'mediaType' => DOCX_MIME_TYPE }));
@@ -188,12 +172,11 @@ public with sharing class DocConversionProvider {
      * Submits the Create PDF job against the uploaded asset.
      * POST /operation/createpdf -> 201 with a Location header (polling URL).
      */
-    private static String submitCreatePdfJob(String accessToken, String assetId) {
+    private static String submitCreatePdfJob(String assetId) {
         HttpRequest req = new HttpRequest();
         req.setEndpoint(NAMED_CREDENTIAL + '/operation/createpdf');
         req.setMethod('POST');
         req.setHeader('X-API-Key', getClientId());
-        req.setHeader('Authorization', 'Bearer ' + accessToken);
         req.setHeader('Content-Type', 'application/json');
         req.setTimeout(TIMEOUT_MS);
         req.setBody(JSON.serialize(new Map<String, String>{ 'assetID' => assetId }));
@@ -211,7 +194,7 @@ public with sharing class DocConversionProvider {
      * fine for fast jobs, but see the class header note for a more robust
      * async alternative.
      */
-    private static Map<String, Object> pollJobUntilDone(String accessToken, String pollingUrl) {
+    private static Map<String, Object> pollJobUntilDone(String pollingUrl) {
         Map<String, Object> lastResult = new Map<String, Object>{ 'status' => 'unknown' };
 
         for (Integer attempt = 0; attempt < MAX_POLL_ATTEMPTS; attempt++) {
@@ -219,7 +202,6 @@ public with sharing class DocConversionProvider {
             req.setEndpoint(pollingUrl);
             req.setMethod('GET');
             req.setHeader('X-API-Key', getClientId());
-            req.setHeader('Authorization', 'Bearer ' + accessToken);
             req.setTimeout(TIMEOUT_MS);
 
             HttpResponse res = new Http().send(req);
@@ -253,21 +235,15 @@ public with sharing class DocConversionProvider {
     }
 
     /**
-     * Retrieves the Adobe client_id. Adjust to match wherever you store it
+     * Retrieves the Adobe client_id, used only for the X-API-Key header
+     * (Adobe's requirement on top of standard OAuth — not secret in the way
+     * the Client Secret is, since Salesforce now manages that separately via
+     * the Named/External Credential). Adjust to match wherever you store it
      * (Custom Metadata Type shown here as an example).
      */
     private static String getClientId() {
         // Example: Adobe_Api_Credential__mdt cred = Adobe_Api_Credential__mdt.getInstance('Default');
         // return cred != null ? cred.Client_Id__c : null;
-        return null; // placeholder — wire this up before use
-    }
-
-    /**
-     * Retrieves the Adobe client_secret. Same storage caveat as getClientId().
-     */
-    private static String getClientSecret() {
-        // Example: Adobe_Api_Credential__mdt cred = Adobe_Api_Credential__mdt.getInstance('Default');
-        // return cred != null ? cred.Client_Secret__c : null;
         return null; // placeholder — wire this up before use
     }
 
