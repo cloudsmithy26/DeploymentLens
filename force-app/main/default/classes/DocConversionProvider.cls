@@ -198,7 +198,7 @@ public with sharing class DocConversionProvider {
             throw new CalloutException('Create PDF job submission failed: HTTP ' + res.getStatusCode() + ' ' + res.getBody());
         }
 
-        String locationHeader = res.getHeader('Location');
+        String locationHeader = getHeaderCaseInsensitive(res, 'Location');
         if (String.isBlank(locationHeader)) {
             List<String> headerDump = new List<String>();
             for (String key : res.getHeaderKeys()) {
@@ -211,6 +211,21 @@ public with sharing class DocConversionProvider {
             );
         }
         return locationHeader;
+    }
+
+    /**
+     * Apex's HttpResponse.getHeader() does an exact-case match, but some
+     * upstream proxies (Adobe's included, at least via their current
+     * gateway) send header names in lowercase regardless of HTTP's own
+     * case-insensitivity. This looks up a header by name ignoring case.
+     */
+    private static String getHeaderCaseInsensitive(HttpResponse res, String headerName) {
+        for (String key : res.getHeaderKeys()) {
+            if (key.equalsIgnoreCase(headerName)) {
+                return res.getHeader(key);
+            }
+        }
+        return null;
     }
 
     /**
