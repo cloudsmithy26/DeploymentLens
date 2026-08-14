@@ -30,10 +30,16 @@
  *    https://developer.adobe.com/document-services/ -> "Get Credentials".
  * 2. External Credential "Adobe_PDF_Services": Authentication Protocol =
  *    OAuth 2.0, Authentication Flow Type = Client Credentials with Client
- *    Secret Flow, Identity Provider URL = https://pdf-services.adobe.io/token,
- *    "Pass client credentials in request body" checked. Add a Principal with
- *    the Client ID / Client Secret, and grant access via External Credential
- *    Principal Access.
+ *    Secret Flow, Identity Provider URL = https://ims-na1.adobelogin.com/ims/token/v3
+ *    (Adobe's actual IMS token endpoint — NOT pdf-services.adobe.io/token),
+ *    "Pass client credentials in request body" checked, and a Scope value
+ *    set (required by Adobe's IMS token endpoint — check the "Generate
+ *    access token" button on your credential's page in the Adobe Developer
+ *    Console for the exact scope string your credential expects, commonly
+ *    something like openid,AdobeID,DCAPI). Add a Principal with the Client
+ *    ID / Client Secret, and grant access via External Credential Principal
+ *    Access. ims-na1.adobelogin.com must also be reachable (Adobe lists it
+ *    as a required allow-listed hostname).
  * 3. Named Credential "Adobe_PDF_Services": URL = https://pdf-services.adobe.io,
  *    linked to the External Credential above, "Generate Authorization Header"
  *    and "Enabled for Callouts" both checked.
@@ -171,6 +177,12 @@ public with sharing class DocConversionProvider {
     /**
      * Submits the Create PDF job against the uploaded asset.
      * POST /operation/createpdf -> 201 with a Location header (polling URL).
+     *
+     * If Location comes back blank, that's surfaced as a loud error with a
+     * full dump of every header Apex actually received — rather than a
+     * generic "no polling URL" message — so you can tell whether Adobe
+     * genuinely omitted it or it's arriving under different casing / being
+     * stripped somewhere between Adobe and Apex.
      */
     private static String submitCreatePdfJob(String assetId) {
         HttpRequest req = new HttpRequest();
@@ -185,7 +197,20 @@ public with sharing class DocConversionProvider {
         if (res.getStatusCode() != 201) {
             throw new CalloutException('Create PDF job submission failed: HTTP ' + res.getStatusCode() + ' ' + res.getBody());
         }
-        return res.getHeader('Location');
+
+        String locationHeader = res.getHeader('Location');
+        if (String.isBlank(locationHeader)) {
+            List<String> headerDump = new List<String>();
+            for (String key : res.getHeaderKeys()) {
+                headerDump.add(key + '=' + res.getHeader(key));
+            }
+            throw new CalloutException(
+                'Create PDF job returned HTTP 201 but no Location header was visible to Apex. '
+                + 'Headers received: [' + String.join(headerDump, ', ') + ']. '
+                + 'Body: ' + res.getBody()
+            );
+        }
+        return locationHeader;
     }
 
     /**
