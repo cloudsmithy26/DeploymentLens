@@ -1,0 +1,535 @@
+<!--
+  @description	: SGE-29609 - FIF US | Broker Snapshot Enhancements
+-->
+<apex:page standardController="Account" renderAs="pdf" extensions="WT_BrokerSnapshotDynamicController"
+           applyBodyTag="false" action="{!createBrokerSnapshotExternalUsageRecord}">
+    <head>
+        <style type="text/css">
+            html, body {
+                font-size: 13px;
+                font-family: Arial, sans-serif;
+            }
+    		.logo-class{
+            	font-family : sans-serif; 
+            	padding-bottom : 10px;
+            }
+            .div-class{
+            	border	: 2px solid black;
+            }
+            .div-section-class{
+            	color : #002664; 
+            	text-align : center;
+            	font : 15pt;
+            	height: 30px;
+            	vertical-align: top;
+            }
+            .section-class{
+            	color : #002664; 
+            	text-align : center;
+            	font : 14pt;
+            	height: 10px;
+            	vertical-align: top;
+            }
+            .table-class{
+            	padding-top : 5px;
+            	cell-padding : 5px;
+            	cell-spacing : 5px;
+            }
+            .table-row{
+            	width : 16%;
+            	text-align : left;
+            	vertical-align : top;
+            }
+            .page-break {
+                page-break-before: always;
+            }
+            .page3-table {
+            	border : 1px solid black;
+            	width : 100%;
+            	border-collapse: collapse;
+    			border-spacing: 0;
+            }
+            .page3-table th, .page3-table td {
+                border: 1px solid black;
+                padding: 8px; 
+            }
+            .col-class{
+            	vertical-align:top !important;
+            	width : 16.6%;
+            	margin-bottom : 2px;
+            }
+            .label-class {
+            	font-weight : bold;
+            	vertical-align : top;
+            }
+            .value-class {
+            	vertical-align : top;
+            	align : left;
+            }
+            .page-block-class { 
+            	margin-bottom : 2px;
+            }
+            .no-data-message {
+            	font-size : 13px;
+            	text-align : center;
+            }
+    	</style>
+    </head>
+    <table class="logo-class">
+		<tr>
+            <td><apex:image id="logo" value="{!$Resource.Logo}" width="230" height="60"/></td>
+		</tr>
+    </table>
+    <div>
+        <p class="div-section-class"><b>FIRST Broker Snapshot</b></p>
+    </div>
+    <div class="div-class">
+        <div>
+            <p class="section-class"><b>General</b></p>
+        </div>
+    	<table class="table-class">
+        <tr>
+            <th class="table-row">Account Name</th>
+            <td class="table-row">
+                <apex:outputField value="{!Account.Name}"/>
+            </td>
+            <th class="table-row">Website</th>
+            <td class="table-row">
+                <apex:outputText value="{!BLANKVALUE(Account.Website, 'NA')}" />
+            </td>
+            <th class="table-row">Account Executive Name</th>
+            <td class="table-row">
+                <apex:outputText value="{!BLANKVALUE(Account.Account_Executive_formula__c, 'NA')}" />
+            </td>
+        </tr> 
+        <tr>
+            <th class="table-row">Fee Reduction Approver</th>
+            <td class="table-row">
+                <apex:outputText value="{!BLANKVALUE(Account.Fee_Reduction_Approver__c, 'NA')}" />
+            </td>
+            <th class="table-row">Account Executive Phone #</th>
+            <td class="table-row">
+                <apex:outputText value="{!BLANKVALUE(Account.Servicing_Team_Lookup__r.Contact_1__r.Phone, 'NA')}" />
+            </td>
+            <th class="table-row">Account Executive Email</th>
+            <td class="table-row">
+                <apex:outputText value="{!BLANKVALUE(Account.Servicing_Team_Lookup__r.Contact_1__r.Email, 'NA')}" />
+            </td>
+        </tr> 
+    	</table>
+    </div>
+    <div>
+        <p class="section-class"><b>Agent Set up / Scorecard</b></p>
+    </div>
+    <div class="div-class">
+        <div>
+            <p class="section-class"><b>Agent Score %</b></p>
+        </div>
+        <table class="table-class">
+            <tr>
+                <th class="table-row">Funding Method / Party</th>
+                <td class="table-row">
+                    <apex:outputText value="{!BLANKVALUE(Account.Funding_Method__c, 'NA')}" /> /&nbsp;
+                	<apex:outputText value="{!BLANKVALUE(Account.Funding_Party__c, 'NA')}" />
+                </td>
+                <th class="table-row">Funding Delay</th>
+                <td class="table-row">
+                    <apex:outputText value="{!BLANKVALUE(Account.WT_Funding_Delay_Configuration__c, 'NA')}" />
+                </td>
+                <th class="table-row">Policy Commission Funding</th>
+                <td class="table-row">
+                    <apex:outputField value="{!Account.WT_Policy_Commission_Funding__c}"/>
+                </td>
+            </tr>
+            <tr>
+                <th class="table-row">e-Notice Delivery</th>
+                <td class="table-row">
+                    <apex:outputText value="{!BLANKVALUE(Account.e_notice_delivery__c, 'NA')}" />
+                </td>
+                <th class="table-row">Individual User Log Ins</th>
+                <td class="table-row">
+                    <apex:outputField value="{!Account.Individual_User_Log_ins__c}"/>
+                </td>
+                <th class="table-row">Global User Log In</th>
+                <td class="table-row">
+                    <apex:outputField value="{!Account.WT_Global_User_Log_In__c}"/>
+                </td>
+            </tr>
+            <tr>
+                <th class="table-row">(Agency Software) Integrations</th>
+                <td class="table-row">
+                    <apex:outputText value="{!BLANKVALUE(Account.Agency_Software_System__c, 'NA')}" />
+                </td>
+                <th class="table-row">CRB Setup</th>
+                <td class="table-row">
+                    <apex:outputField value="{!Account.Allow_CRB_Quotes__c}" />
+                </td>
+                <th class="table-row">Personal Lines</th>
+                <td class="table-row">
+                    <apex:outputField value="{!Account.Personal_Lines_Set_Up__c}"/>
+                </td>
+            </tr>
+            <tr>
+                <th class="table-row">Quoting Authority</th>
+                <td class="table-row">
+                    <apex:outputText value="{!BLANKVALUE(Account.Quoting_Authority__c, 'NA')}" />
+                </td>
+                <th class="table-row"></th>
+                <td class="table-row"></td>
+                <th class="table-row"></th>
+                <td class="table-row"></td>
+            </tr>
+        </table>
+        <div>
+            <p class="section-class"><b>e-Complete</b></p>
+        </div>
+        <table class="table-class">
+        <tr>
+            <th class="table-row">e-Complete</th>
+            <td class="table-row">
+                <apex:outputField value="{!Account.E_Complete_Set_Up__c}"/>
+            </td>
+            <th class="table-row">Auto Booking</th>
+            <td class="table-row">
+                <apex:outputField value="{!Account.Auto_Book_with_Down_Payment__c}"/>
+            </td>
+            <th class="table-row">Auto Signature</th>
+            <td class="table-row">
+                <apex:outputField value="{!Account.Auto_E_Signature__c}"/>
+            </td>
+        </tr>
+        <tr>
+            <th class="table-row">e-Complete Co-Branding</th>
+            <td class="table-row">
+                <apex:outputField value="{!Account.WT_e_Complete_Co_Branding__c}"/>
+            </td>
+            <th class="table-row">FIF Collects DP</th>
+            <td class="table-row">
+                <apex:outputField value="{!Account.Allow_FIFC_to_Collect_DP__c}"/>
+            </td>
+            <th class="table-row"># of e-Complete Quotes YTD</th>
+            <td class="table-row">
+                <apex:outputText value="{!BLANKVALUE(Account.Ecomplete_Quotes_YTD__c, 0)}" />
+            </td>
+        </tr>
+        <tr>
+            <th class="table-row">FIF Default Collects</th>
+            <td class="table-row">
+                <apex:outputField value="{!Account.Default_To_FIFC_Collects__c}"/>
+            </td>
+        </tr>
+    </table>
+        <div>
+            <p class="section-class"><b>Compensation</b></p>
+        </div>
+        <apex:pageBlock >
+            <apex:panelGrid columns="6" width="100%" cellpadding="2" cellspacing="2" columnClasses="col-class" styleClass="page-block-class">
+                <apex:outputLabel rendered="{!NOT(ISBLANK(Account.First_Rewards__c))}" value="FIRST Rewards" styleClass="label-class"></apex:outputLabel>
+                <apex:outputText rendered="{!NOT(ISBLANK(Account.First_Rewards__c))}" value="{!Account.First_Rewards__c}" styleClass="value-class"></apex:outputText>
+        		
+                <apex:outputLabel value="New York Service Agreement" styleClass="label-class"></apex:outputLabel>
+				<apex:outputText value="{!BLANKVALUE(Account.New_York_Service_Agreement__c, 'NA')}" styleClass="value-class"></apex:outputText>
+				                
+                <apex:outputLabel rendered="{!NOT(ISBLANK(Account.Estimated_Bonus_Amount__c))}" value="Estimated Bonus Amount" styleClass="label-class"></apex:outputLabel>
+                <apex:outputText rendered="{!NOT(ISBLANK(Account.Estimated_Bonus_Amount__c))}" value="{!Account.Estimated_Bonus_Amount__c}" styleClass="value-class"></apex:outputText>
+        		
+                <apex:outputLabel rendered="{!NOT(ISBLANK(Account.Pre_Paid_Agreement__c))}" value="Pre-Paid Agreement" styleClass="label-class"></apex:outputLabel>
+                <apex:outputText rendered="{!NOT(ISBLANK(Account.Pre_Paid_Agreement__c))}" value="{!Account.Pre_Paid_Agreement__c}" styleClass="value-class"></apex:outputText>
+        		
+                <apex:outputLabel rendered="{!NOT(ISBLANK(Account.Pre_Paid_Income__c))}" value="Pre-Paid Remaining Balance" styleClass="label-class"></apex:outputLabel>
+                <apex:outputText rendered="{!NOT(ISBLANK(Account.Pre_Paid_Income__c))}" value="{!Account.Pre_Paid_Income__c}" styleClass="value-class"></apex:outputText>
+        		
+                <apex:outputLabel rendered="{!NOT(ISBLANK(Account.Bonus_Structure__c))}" value="Bonus" styleClass="label-class"></apex:outputLabel>
+                <apex:outputText rendered="{!NOT(ISBLANK(Account.Bonus_Structure__c))}" value="{!Account.Bonus_Structure__c}" styleClass="value-class"></apex:outputText>
+        		
+                <apex:outputLabel rendered="{!NOT(ISBLANK(Account.Late_Fee_and_Loss_Sharing__c))}" value="Late Fee and Loss Sharing" styleClass="label-class"></apex:outputLabel>
+                <apex:outputText rendered="{!NOT(ISBLANK(Account.Late_Fee_and_Loss_Sharing__c))}" value="{!Account.Late_Fee_and_Loss_Sharing__c}" styleClass="value-class"></apex:outputText>
+        		
+                <apex:outputLabel value="Fee Payment Frequency" styleClass="label-class"></apex:outputLabel>
+                <apex:outputText value="{!BLANKVALUE(Account.Fee_Payment_Frequency__c, 'NA')}" styleClass="value-class"></apex:outputText>
+                
+                <apex:outputLabel rendered="{!NOT(ISBLANK(Account.Estimated_Late_Fee_Amount__c))}" value="Estimated Late Fee Amount" styleClass="label-class"></apex:outputLabel>
+                <apex:outputText rendered="{!NOT(ISBLANK(Account.Estimated_Late_Fee_Amount__c))}" value="{!Account.Estimated_Late_Fee_Amount__c}" styleClass="value-class"></apex:outputText>
+        	</apex:panelGrid>
+        </apex:pageBlock>
+    </div>
+    <table class="page-break logo-class">
+		<tr>
+            <td><apex:image id="logo1" value="{!$Resource.Logo}" width="230" height="60"/></td>
+		</tr>
+    </table>
+    <div class="div-class">
+        <p class="section-class"><b>Wintrust Cross Selling</b></p>
+        <table class="table-class">
+            <tr>
+                <th class="table-row"># of Referrals</th>
+                <td class="table-row">
+                    <apex:outputText value="{!BLANKVALUE(Account.WT_Number_Of_Referral__c, 0)}" />
+                </td>
+                <th class="table-row">Agency Lending</th>
+                <td class="table-row">
+                    <apex:outputField value="{!Account.Agency_Lending_Closed_with_Wintrust__c}"/>
+                </td>
+                <th class="table-row">Banking with Wintrust</th>
+                <td class="table-row">
+                    <apex:outputField value="{!Account.WT_Existing_Deposit__c}"/>
+                </td>
+            </tr>
+        </table>
+		<br/>
+        <div>
+            <p class="section-class"><b>Added&nbsp;Value</b></p>
+        </div>
+        <table class="table-class">
+        <tr>
+            <th class="table-row">Favorite Team</th>
+            <td class="table-row">
+                <apex:outputText value="{!BLANKVALUE(Account.Favorite_Team__c, 'NA')}" />
+            </td>
+            <th class="table-row">Sponsorships</th>
+            <td class="table-row">
+                <apex:outputText value="{!BLANKVALUE(Account.WT_Agency_Sponsorships__c, 'NA')}" />
+            </td>
+            <th class="table-row"></th>
+            <td class="table-row"></td>
+        </tr>
+    </table>
+	</div>
+    <br/><br/>
+    <div class="div-class">
+        <p class="section-class"><b>Production</b></p>
+        <table class="table-class">
+            <tr>
+                <th class="table-row">Potential business (Est. amt. financed)</th>
+                <td class="table-row">
+                    <apex:outputText value="{0, number, $#,##0.00}">
+                        <apex:param value="{!BLANKVALUE(Account.Est_Amount_Financed__c, 0)}" />
+                    </apex:outputText>
+                </td>
+            </tr>
+            <tr>
+                <th class="table-row">TTM Volume</th>
+                <td class="table-row">
+                    <apex:outputText value="{0, number, $#,##0.00}">
+                        <apex:param value="{!BLANKVALUE(Account.TTM_Volume__c, 0)}" />
+                    </apex:outputText>
+                </td>
+            </tr>
+            <tr>
+                <th class="table-row">YTD Loans – Current year</th>
+                <td class="table-row">
+                    <apex:outputText value="{!BLANKVALUE(Account.YTD_Loans_Current_Year__c, 0)}" />
+                </td>
+            </tr>
+            <tr>
+                <th class="table-row">YTD Loans – Prior Year</th>
+                <td class="table-row">
+                    <apex:outputText value="{!BLANKVALUE(Account.YTD_Loans_Prior_Year__c, 0)}" />
+                </td>
+            </tr>
+            <tr>
+                <th class="table-row">YTD Volume – Current year</th>
+                <td class="table-row">
+                    <apex:outputText value="{0, number, $#,##0.00}">
+                        <apex:param value="{!BLANKVALUE(Account.YTD_Volume_Current_Year__c, 0)}" />
+                    </apex:outputText>
+                </td>
+            </tr>
+            <tr>
+                <th class="table-row">YTD Volume – Prior Year</th>
+                <td class="table-row">
+                    <apex:outputText value="{0, number, $#,##0.00}">
+                        <apex:param value="{!BLANKVALUE(Account.YTD_Volume_Prior_Year__c, 0)}" />
+                    </apex:outputText>
+                </td>
+            </tr>
+            <tr>
+                <th class="table-row">YTD Vol Variance</th>
+                <td class="table-row">
+                    <apex:outputText value="{0, number, #.0%}">
+                        <apex:param value="{!BLANKVALUE(Account.YTD_Vol_Variance__c, 0)}" />
+                    </apex:outputText>
+                </td>
+            </tr>
+            <tr>
+                <th class="table-row">YTD Fee Income - Current year</th>
+                <td class="table-row">
+                    <apex:outputText value="{0, number, $#,##0.00}">
+                        <apex:param value="{!BLANKVALUE(Account.YTD_Fee_Income_Current_Year__c, 0)}" />
+                    </apex:outputText>
+                </td>
+            </tr>
+            <tr>
+                <th class="table-row">YTD Fee Income - Prior Year</th>
+                <td class="table-row">
+                    <apex:outputText value="{0, number, $#,##0.00}">
+                        <apex:param value="{!BLANKVALUE(Account.YTD_Fee_Income_Prior_Year__c, 0)}" />
+                    </apex:outputText>
+                </td>
+            </tr>
+            <tr>
+                <th class="table-row"></th>
+                <td class="table-row"></td>
+            </tr>
+        </table>
+        <br/>
+        <div>
+            <p class="section-class"><b>Historical Production</b></p>
+        </div>
+        <table class="table-class">
+            <tr>
+                <th class="table-row">Prior year YE Loan</th>
+                <td class="table-row">
+                    <apex:outputText value="{!BLANKVALUE(Account.Prior_Year_YE_Loans__c, 0)}" />
+                </td>
+            </tr>
+            <tr>
+                <th class="table-row">Prior year YE Volume</th>
+                <td class="table-row">
+                    <apex:outputText value="{0, number, $#,##0.00}">
+                        <apex:param value="{!BLANKVALUE(Account.Prior_Year_YE_Volume__c, 0)}" />
+                    </apex:outputText>
+                </td>
+            </tr>
+            <tr>
+                <th class="table-row">Prior year YE Fee Income</th>
+                <td class="table-row">
+                    <apex:outputText value="{0, number, $#,##0.00}">
+                        <apex:param value="{!BLANKVALUE(Account.Prior_Year_YE_Fee_Income__c, 0)}" />
+                    </apex:outputText>
+                </td>
+            </tr>
+            <tr>
+                <th class="table-row">2 year prior YE Loan</th>
+                <td class="table-row">
+                    <apex:outputText value="{!BLANKVALUE(Account.X2_Year_prior_YE_Loans__c, 0)}" />
+                </td>
+            </tr>
+            <tr>
+                <th class="table-row">2 year prior YE Volume</th>
+                <td class="table-row">
+                    <apex:outputText value="{0, number, $#,##0.00}">
+                        <apex:param value="{!BLANKVALUE(Account.X2_Year_prior_YE_Volume__c, 0)}" />
+                    </apex:outputText>
+                </td>
+            </tr>
+            <tr>
+                <th class="table-row">2 year prior YE Fee Income</th>
+                <td class="table-row">
+                    <apex:outputText value="{0, number, $#,##0.00}">
+                        <apex:param value="{!BLANKVALUE(Account.X2_Year_prior_YE_Fee_Income__c, 0)}" />
+                    </apex:outputText>
+                </td>
+            </tr>
+            <tr>
+                <th class="table-row">YTD Write-Offs - Current Year</th>
+                <td class="table-row">
+                    <apex:outputText value="{0, number, $#,##0.00}">
+                        <apex:param value="{!BLANKVALUE(Account.YTD_Write_Offs_Current_Year__c, 0)}" />
+                    </apex:outputText>
+                </td>
+            </tr>
+            <tr>
+                <th class="table-row">2025 YE Write Offs</th>
+                <td class="table-row">
+                    <apex:outputText value="{0, number, $#,##0.00}">
+                        <apex:param value="{!BLANKVALUE(Account.WT_2025_YE_Write_Offs__c, 0)}" />
+                    </apex:outputText>
+                </td>
+            </tr>
+            <tr>
+                <th class="table-row">2024 YE Write Offs</th>
+                <td class="table-row">
+                    <apex:outputText value="{0, number, $#,##0.00}">
+                        <apex:param value="{!BLANKVALUE(Account.X2024_YE_Write_offs__c, 0)}" />
+                    </apex:outputText>
+                </td>
+            </tr>
+        </table>
+    </div>
+    <br/>
+    <table class="page-break logo-class">
+		<tr>
+            <td><apex:image id="logo2" value="{!$Resource.Logo}" width="230" height="60"/></td>
+		</tr>
+    </table>
+    <div>
+        <p class="section-class"><b>Top 3 Lost Accounts due to Competition</b></p>
+    </div>
+    <apex:outputPanel rendered="{!listLostAccount.size > 0}">
+        <table class="page3-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Amount</th>
+                    <th>Effective Date</th>
+                    <th>Stage</th>
+                    <th>Lost Reason</th>
+                </tr>
+            </thead>
+            <tbody>
+                <apex:repeat value="{!listLostAccount}" var="acc">
+                    <tr>
+                        <td>{!acc.Name}</td>
+                        <td>
+                            <apex:outputText value="{0, number, $#,##0.00}">
+                                <apex:param value="{!acc.Amount}" />
+                            </apex:outputText>
+                        </td>
+                        <td>
+                            <apex:outputText value="{0, date, MM/dd/yyyy}">
+                                <apex:param value="{!acc.Effective_Date__c}" />
+                            </apex:outputText>
+                        </td>
+                        <td>{!acc.StageName}</td>
+                        <td>{!acc.Lost_Reason__c}</td>
+                    </tr>
+                </apex:repeat>
+            </tbody>
+        </table>
+    </apex:outputPanel>
+    <apex:outputPanel rendered="{!listLostAccount.size == 0}">
+        <div class="no-data-message">
+            No records!
+        </div>
+    </apex:outputPanel>
+    <br/>
+    <div>
+        <p class="section-class"><b>Top 5 Large Loans &amp; Renewal Date</b></p>
+    </div>
+    <apex:outputPanel rendered="{!listTopOpportunity.size > 0}">
+        <table class="page3-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Amount</th>
+                    <th>Effective Date</th>
+                    <th>Stage</th>
+                </tr>
+            </thead>
+            <tbody>
+                <apex:repeat value="{!listTopOpportunity}" var="opp">
+                    <tr>
+                        <td>{!opp.Name}</td>
+                        <td>
+                            <apex:outputText value="{0, number, $#,##0.00}">
+                                <apex:param value="{!opp.Amount}" />
+                            </apex:outputText>
+                        </td>
+                        <td>
+                            <apex:outputText value="{0, date, MM/dd/yyyy}">
+                                <apex:param value="{!opp.Effective_Date__c}" />
+                            </apex:outputText>
+                        </td>
+                        <td>{!opp.StageName}</td>
+                    </tr>
+                </apex:repeat>
+            </tbody>
+        </table>
+    </apex:outputPanel>
+    <apex:outputPanel rendered="{!listTopOpportunity.size == 0}">
+        <div class="no-data-message">
+            No records!
+        </div>
+    </apex:outputPanel>
+</apex:page>

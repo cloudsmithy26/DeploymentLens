@@ -1,0 +1,255 @@
+<apex:page standardController="Account" renderAs="pdf">
+<table style="font-family:sans-serif; padding-bottom:30px;">
+<tr>
+    <td><apex:image id="logo" value="{!$Resource.Logo}" width="230" height="60"/></td>
+    <td style="font:24pt; padding-left:10px; padding-right:250px;"></td>
+    <td style="font:15pt;">Broker Snapshot</td>
+</tr>
+</table>
+
+<table style="border:0.2px solid #fff; font-family:Adobe Garmond Pro;">
+    <tr style="color:#002664;">
+        <th style="padding-left:3px; padding-right:140px;">AGENCY INFORMATION </th>
+            
+    </tr>
+<td><br></br></td>
+<tr>
+    <td style="padding-left:5px;">Account Name</td>
+    <td></td>
+    <td style="padding-left:5px;"><apex:outputField value="{!Account.Name}"/></td>
+</tr>
+<tr>
+    <td style="padding-left:5px;">Billing Address </td>
+    <td></td>
+    <td style="padding-left:5px;"><apex:outputField value="{!Account.WT_Fm_Billing_Address__c}"/></td>
+</tr>
+<tr>
+    <td style="padding-left:5px;">Phone</td>
+    <td></td>
+    <td style="padding-left:5px;"><apex:outputField value="{!Account.WT_Phone_Number__c}"/></td>
+</tr>
+
+<tr>
+    <td style="padding-left:5px;">Website</td>
+    <td></td>
+    <td style="padding-left:5px;"><apex:outputField value="{!Account.website}"/></td>
+</tr>
+<tr>
+    <td style="padding-left:5px;">Primary Region Name</td>
+    <td></td>
+    <td style="padding-left:5px;"><apex:outputField value="{!Account.Primary_Region_Name__c}"/></td>
+</tr>
+<tr>
+    <td style="padding-left:5px;">Account Executive</td>
+    <td></td>
+    <td style="padding-left:5px;"><apex:outputField value="{!Account.Account_Executive_formula__c}"/></td>
+</tr>
+<tr>
+    <td style="padding-left:5px;">FIRST Insite Agent Code</td>
+    <td></td>
+    <td style="padding-left:5px;"><apex:outputField value="{!Account.PBS_Agent_Code__c}"/></td>
+</tr>
+
+</table>
+<br></br>
+
+<table style="border:0.2px solid #fff; font-family:Adobe Garmond Pro;">
+<tr style="color:#002664;">
+    <th style="padding-left:3px; padding-right:180px;"> YTD PRODUCTION </th>
+       
+</tr>
+<td><br></br></td>
+<tr>
+    <td style="padding-left:5px;">Production as of</td>
+    <td></td>
+    <td style="padding-left:5px;"><apex:outputField value="{!Account.Production_as_of__c}"/></td>
+</tr>
+<tr>
+    <td style="padding-left:5px;">Last Loan</td>
+    <td></td>
+    <td style="padding-left:5px;"><apex:outputField value="{!Account.Last_Loan__c}"/></td>
+</tr>
+<tr>
+    <td style="padding-left:5px;">YTD Loans - Current Year</td>
+    <td></td>
+    <td style="padding-left:5px;"><apex:outputField value="{!Account.YTD_Loans_Current_Year__c}"/></td>
+</tr>
+<tr>
+    <td style="padding-left:5px;">YTD Volume - Current Year</td>
+    <td></td>
+    <td style="padding-left:5px;"><apex:outputField value="{!Account.YTD_Volume_Current_Year__c}"/></td>
+</tr>
+<tr>
+    <td style="padding-left:5px;">YTD Loans - Prior Year</td>
+    <td></td>
+    <td style="padding-left:5px;"><apex:outputField value="{!Account.YTD_Loans_Prior_Year__c}"/></td>
+</tr>
+<tr>
+    <td style="padding-left:5px;">YTD Volume - Prior Year</td>
+    <td></td>
+    <td style="padding-left:5px;"><apex:outputField value="{!Account.YTD_Volume_Prior_Year__c}"/></td>
+</tr>
+<tr>
+    <td style="padding-left:5px;">YTD Loan Variance</td>
+    <td></td>
+    <td style="padding-left:5px;"><apex:outputField value="{!Account.YTD_Loan_Variance__c}"/></td>
+</tr>
+<tr>
+    <td style="padding-left:5px;">YTD Vol Variance</td>
+    <td></td>
+    <td style="padding-left:5px;"><apex:outputField value="{!Account.YTD_Vol_Variance__c}"/></td>
+</tr>
+<tr>
+    <td style="padding-left:5px;">TTM Volume</td>
+    <td></td>
+    <td style="padding-left:5px;"><apex:outputField value="{!Account.TTM_Volume__c}"/></td>
+</tr>
+<tr>
+    <td style="padding-left:5px;">YE Volume - Prior Calendar Year</td>
+    <td></td>
+    <td style="padding-left:5px;"><apex:outputField value="{!Account.YE_Volume_Prior_Calendar_Year__c}"/></td>
+</tr>
+<tr>
+    <td style="padding-left:5px;">Outstanding Loan Balance</td>
+    <td></td>
+    <td style="padding-left:5px;"><apex:outputField value="{!Account.Outstanding_Loan_Balance__c}"/></td>
+</tr>
+
+<td><br></br></td>
+</table>
+
+<table style="border:0.2px solid #fff; font-family:Adobe Garmond Pro;">
+<tr style="color:#002664;">
+    <th style="padding-left:3px; padding-right:110px;">HISTORICAL      PRODUCTION </th>
+      
+</tr>
+<td></td>
+<tr>
+    <td style="padding-left:5px;">2023 YE Loan</td>
+    <td></td>
+    <td style="padding-left:5px;"><apex:outputField value="{!Account.X2023_YE_Loan__c}"/></td>
+</tr>
+<tr>
+    <td style="padding-left:5px;">2023 YE Volume</td>
+    <td></td>
+    <td style="padding-left:5px;"><apex:outputField value="{!Account.X2023_YE_Volume__c}"/></td>
+</tr>
+<tr>
+    <td style="padding-left:5px;">2023 YE Fee Income</td>
+    <td></td>
+    <td style="padding-left:5px;"><apex:outputField value="{!Account.X2023_Fee_Income__c}"/></td>
+</tr>
+<tr>
+    <td style="padding-left:5px;">2022 YE Loan</td>
+    <td></td>
+    <td style="padding-left:5px;"><apex:outputField value="{!Account.X2022_YE_Loan__c}"/></td>
+</tr>
+<tr>
+    <td style="padding-left:5px;">2022 YE Volume</td>
+    <td></td>
+    <td style="padding-left:5px;"><apex:outputField value="{!Account.X2022_YE_Vol__c}"/></td>
+</tr>
+<tr>
+    <td style="padding-left:5px;">2022 YE Fee Income</td>
+    <td></td>
+    <td style="padding-left:5px;"><apex:outputField value="{!Account.X2022_Fee_Income__c}"/></td>
+</tr>
+<tr>
+    <td style="padding-left:5px;">2021 YE Loan</td>
+    <td></td>
+    <td style="padding-left:5px;"><apex:outputField value="{!Account.X2021_YE_Loan__c}"/></td>
+</tr>
+<tr>
+    <td style="padding-left:5px;">2021 YE Volume</td>
+    <td></td>
+    <td style="padding-left:5px;"><apex:outputField value="{!Account.X2021_YE_Volume__c}"/></td>
+</tr>
+<tr>
+    <td style="padding-left:5px;">2021 YE Fee Income</td>
+    <td></td>
+    <td style="padding-left:5px;"><apex:outputField value="{!Account.X2021_YE_Fee_Income__c}"/></td>
+</tr>
+</table>
+<br></br><br></br><br></br><br></br><br></br><br></br>
+<table style="border:0.2px solid #fff; font-family:Adobe Garmond Pro;">
+<tr style="color:#002664;">
+    <th style="padding-left:3px; padding-right:180px;">     YTD    WRITE      -     OFFS             </th>
+     
+</tr>
+<td></td>
+<tr>
+    <td style="padding-left:5px;">YTD Write-Offs - Current Year</td>
+    <td></td>
+    <td style="padding-left:5px;"><apex:outputField value="{!Account.YTD_Write_Offs_Current_Year__c}"/></td>
+</tr>
+<tr>
+    <td style="padding-left:5px;">2023 YE Write-offs</td>
+    <td></td>
+    <td style="padding-left:5px;"><apex:outputField value="{!Account.X2023_YE_Write_offs__c}"/></td>
+</tr>
+<tr>
+    <td style="padding-left:5px;">2022 YE Write-offs</td>
+    <td></td>
+    <td style="padding-left:5px;"><apex:outputField value="{!Account.X2022_YE_Write_offs__c}"/></td>
+</tr>
+<tr>
+    <td style="padding-left:5px;">2021 YE Write offs</td>
+    <td></td>
+    <td style="padding-left:5px;"><apex:outputField value="{!Account.X2021_YE_Write_Off__c}"/></td>
+</tr>
+
+<td><br></br></td>
+</table>
+<table style="border:0.2px solid #fff; font-family:Adobe Garmond Pro;">
+<tr style="color:#002664;">
+    <th style="padding-left:3px; padding-right:130px;">AGENCY RELATIONSHIP </th>
+     
+</tr>
+<td></td>
+<tr>
+    <td style="padding-left:4px;">Parent Account</td>
+    <td></td>
+    <td style="padding-left:4px;"><apex:outputField value="{!Account.ParentId}"/></td>
+</tr>
+<tr>
+    <td style="padding-left:4px;">National ID Name</td>
+    <td></td>
+    <td style="padding-left:4px;"><apex:outputField value="{!Account.National_ID_Name__c}"/></td>
+</tr>
+<tr>
+    <td style="padding-left:4px;">Funding Method</td>
+    <td></td>
+    <td style="padding-left:4px;"><apex:outputField value="{!Account.Funding_Method__c}"/></td>
+</tr>
+<tr>
+    <td style="padding-left:4px;">Funding Party</td>
+    <td></td>
+    <td style="padding-left:4px;"><apex:outputField value="{!Account.Funding_Party__c}"/></td>
+</tr>
+<tr>
+    <td style="padding-left:4px;">FIRST Competitor</td>
+    <td></td>
+    <td style="padding-left:4px;"><apex:outputField value="{!Account.FIRST_Competitor__c}"/></td>
+</tr>
+<tr>
+    <td style="padding-left:4px;">Pricing Guidelines</td>
+    <td></td>
+    <td style="padding-left:4px;"><apex:outputField value="{!Account.Pricing_Guidelines__c}"/></td>
+</tr>
+<tr>
+    <td style="padding-left:4px;">Servicing Rules and Issues</td>
+    <td></td>
+    <td style="padding-left:4px;"><apex:outputField value="{!Account.Servicing_Rules_and_Issues__c}"/></td>
+</tr>
+<tr>
+    <td style="padding-left:4px;">Date of Last Activity</td>
+    <td></td>
+    <td style="padding-left:4px;"><apex:outputField value="{!Account.Date_of_Last_Activity__c}"/></td>
+</tr>
+
+<tr>
+    <td></td>
+    
+</tr>
+</table>
+</apex:page>
