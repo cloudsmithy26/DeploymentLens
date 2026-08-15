@@ -6,18 +6,31 @@ import generate from '@salesforce/apex/WT_BrokerSnapshotExternalDocGenController
 import getLatestBrokerSnapshot from '@salesforce/apex/WT_BrokerSnapshotExternalDocGenController.getLatestBrokerSnapshot';
 
 // Lightning Web Security blocks <iframe src="blob:..."> outright, so a PDF's bytes cannot be
-// embedded directly in this component via a Blob object URL. Two platform-compatible ways to
-// show the file remain, and this component offers both side by side so they can be compared
-// after deploying:
+// embedded directly in this component via a Blob object URL. Three platform-compatible ways
+// to show the file remain, and this component offers all three side by side (toggle) so they
+// can be compared after deploying and narrowed down to one:
 //   1. "Standard Preview" — Salesforce's own File Preview overlay via NavigationMixin, the
-//      same modal a Files related list uses.
-//   2. "Inline Viewer" — a same-origin (https://) iframe pointed at a small static resource
+//      same modal a Files related list uses. Always available; no setup required.
+//   2. "Inline (pdf.js)" — a same-origin (https://) iframe pointed at a small static resource
 //      (WT_BrokerSnapshotPdfViewer, built on Mozilla's pdf.js core library, shared with the
 //      Dynamic-variant component) that renders the PDF onto <canvas> elements. The generated
 //      PDF's base64 bytes are handed to it via window.postMessage once it reports itself
-//      ready — LWS allows postMessage into a same-origin iframe even though it blocks
-//      blob: iframe navigation.
+//      ready. Only works for files small enough to come back with inline base64 data (see
+//      WT_BrokerSnapshotExternalDocGenController.inlineDownloadMaxBytes).
+//   3. "Inline (Simple)" — an iframe pointed directly at the file's own servlet download URL
+//      (https://, same-origin — never blocked by LWS). This is Salesforce's own documented
+//      pattern (see the Salesforce Developers blog "Display PDF Files with Lightning Web
+//      Components"), but it renders inline only if the ORG is configured for it: Setup ->
+//      Security -> File Upload and Download Security -> PDF -> Execute in Browser. ("Hybrid"
+//      is not enough — it only executes legacy Attachments/Documents in-browser and still
+//      downloads modern Salesforce Files, which is what ContentVersion/ContentDocument are.)
+//      Until that setting is made, this mode will simply download the file instead of
+//      showing it, which is expected and not a bug in this component.
 const PDF_VIEWER_URL = `${pdfViewerResource}/viewer.html`;
+
+const PREVIEW_MODE_STANDARD = 'standard';
+const PREVIEW_MODE_PDFJS = 'pdfjs';
+const PREVIEW_MODE_SERVLET = 'servlet';
 
 // This component mirrors wt_BrokerSnapshotDocGen exactly, pointed at
 // WT_BrokerSnapshotExternalDocGenController instead — kept as an independent copy (its own
@@ -30,10 +43,10 @@ export default class Wt_BrokerSnapshotExternalDocGen extends NavigationMixin(Lig
     _pendingInlineBase64Data;
 
     // Identity (not just a boolean) of the specific <iframe> DOM node that last reported
-    // itself ready. The iframe unmounts/remounts (a new DOM node, a fresh unloaded document)
-    // whenever showInlineViewer flips false->true — including indirectly, e.g. a large
-    // (inline-viewer-ineligible) generated file followed by a small one while the user stays
-    // in Inline Viewer mode the whole time. Comparing node identity, rather than tracking a
+    // itself ready. The pdf.js iframe unmounts/remounts (a new DOM node, a fresh unloaded
+    // document) whenever its lwc:if condition flips false->true — including indirectly, e.g.
+    // a large (pdf.js-ineligible) generated file followed by a small one while the user stays
+    // on the pdf.js mode the whole time. Comparing node identity, rather than tracking a
     // boolean that business-logic code would have to remember to reset on every such path,
     // makes "is the iframe currently in the DOM the same one that said VIEWER_READY" always
     // correct without enumerating every transition that (re)mounts it.
@@ -51,7 +64,7 @@ export default class Wt_BrokerSnapshotExternalDocGen extends NavigationMixin(Lig
     contentDocumentId;
     pdfBase64Data;
 
-    useInlineViewer = false;
+    previewMode = PREVIEW_MODE_STANDARD;
     pdfViewerUrl = PDF_VIEWER_URL;
 
     @api
@@ -96,25 +109,47 @@ export default class Wt_BrokerSnapshotExternalDocGen extends NavigationMixin(Lig
         return !this.hasDocument && !this.isLoadingExisting;
     }
 
-    get canUseInlineViewer() {
+    get isPdfjsModeSelected() {
+        return this.previewMode === PREVIEW_MODE_PDFJS;
+    }
+
+    get isServletModeSelected() {
+        return this.previewMode === PREVIEW_MODE_SERVLET;
+    }
+
+    get canUsePdfjsViewer() {
         return !!this.pdfBase64Data;
     }
 
-    get showInlineViewer() {
-        return this.useInlineViewer && this.hasDocument && this.canUseInlineViewer;
+    get showPdfjsViewer() {
+        return this.isPdfjsModeSelected && this.hasDocument && this.canUsePdfjsViewer;
+    }
+
+    get showServletViewer() {
+        return this.isServletModeSelected && this.hasDocument;
     }
 
     get standardPreviewButtonVariant() {
-        return this.useInlineViewer ? 'neutral' : 'brand';
+        return this.previewMode === PREVIEW_MODE_STANDARD ? 'brand' : 'neutral';
     }
 
-    get inlineViewerButtonVariant() {
-        return this.useInlineViewer ? 'brand' : 'neutral';
+    get pdfjsViewerButtonVariant() {
+        return this.isPdfjsModeSelected ? 'brand' : 'neutral';
     }
 
-    get inlineViewerUnavailableMessage() {
-        return this.useInlineViewer && this.hasDocument && !this.canUseInlineViewer
-            ? 'This file is too large for the inline viewer — use Standard Preview or Download instead.'
+    get servletViewerButtonVariant() {
+        return this.isServletModeSelected ? 'brand' : 'neutral';
+    }
+
+    get pdfjsViewerUnavailableMessage() {
+        return this.isPdfjsModeSelected && this.hasDocument && !this.canUsePdfjsViewer
+            ? 'This file is too large for the pdf.js viewer — use another mode or Download instead.'
+            : undefined;
+    }
+
+    get servletViewerHint() {
+        return this.isServletModeSelected && this.hasDocument
+            ? 'If this downloads the file instead of showing it, ask an admin to set Setup → Security → File Upload and Download Security → PDF → Execute in Browser.'
             : undefined;
     }
 
@@ -187,26 +222,34 @@ export default class Wt_BrokerSnapshotExternalDocGen extends NavigationMixin(Lig
     }
 
     handleStandardPreviewSelected() {
-        this.useInlineViewer = false;
+        this.previewMode = PREVIEW_MODE_STANDARD;
         if (this.hasDocument) {
             this.openStandardFilePreview();
         }
     }
 
-    handleInlineViewerSelected() {
-        this.useInlineViewer = true;
-        if (this.hasDocument && this.canUseInlineViewer) {
-            this.renderInlineViewer();
+    handlePdfjsViewerSelected() {
+        this.previewMode = PREVIEW_MODE_PDFJS;
+        if (this.hasDocument && this.canUsePdfjsViewer) {
+            this.renderPdfjsViewer();
         }
+    }
+
+    handleServletViewerSelected() {
+        this.previewMode = PREVIEW_MODE_SERVLET;
+        // No JS action needed: the servlet-viewer <iframe>'s src is template-bound to
+        // downloadUrl directly, so it renders (or, until the org's PDF download setting is
+        // switched to Execute in Browser, offers a download) as soon as it mounts.
     }
 
     /** Shows the current document using whichever preview mode is currently selected. */
     showCurrentDocument() {
-        if (this.useInlineViewer) {
-            this.renderInlineViewer();
-        } else {
+        if (this.previewMode === PREVIEW_MODE_PDFJS) {
+            this.renderPdfjsViewer();
+        } else if (this.previewMode === PREVIEW_MODE_STANDARD) {
             this.openStandardFilePreview();
         }
+        // PREVIEW_MODE_SERVLET needs no action here — see handleServletViewerSelected.
     }
 
     /** Opens the file in Salesforce's built-in File Preview overlay — the same "standard
@@ -231,11 +274,11 @@ export default class Wt_BrokerSnapshotExternalDocGen extends NavigationMixin(Lig
      *  because it has never loaded yet, or because it was unmounted and a fresh one just
      *  remounted — the data is queued and flushed once the new one reports ready, avoiding a
      *  race where postMessage fires before the iframe's own listener is attached. */
-    renderInlineViewer() {
+    renderPdfjsViewer() {
         if (!this.pdfBase64Data) {
             return;
         }
-        const currentIframe = this.template.querySelector('iframe.broker-snapshot-inline-viewer');
+        const currentIframe = this.template.querySelector('iframe.broker-snapshot-pdfjs-viewer');
         if (currentIframe && currentIframe === this._readyIframeElement) {
             this.postToViewer(this.pdfBase64Data);
         } else {
@@ -244,7 +287,7 @@ export default class Wt_BrokerSnapshotExternalDocGen extends NavigationMixin(Lig
     }
 
     postToViewer(base64Data) {
-        const iframe = this.template.querySelector('iframe.broker-snapshot-inline-viewer');
+        const iframe = this.template.querySelector('iframe.broker-snapshot-pdfjs-viewer');
         if (!iframe || !iframe.contentWindow) {
             return;
         }
@@ -259,13 +302,13 @@ export default class Wt_BrokerSnapshotExternalDocGen extends NavigationMixin(Lig
             return;
         }
         if (event.data.type === 'VIEWER_READY') {
-            this._readyIframeElement = this.template.querySelector('iframe.broker-snapshot-inline-viewer');
+            this._readyIframeElement = this.template.querySelector('iframe.broker-snapshot-pdfjs-viewer');
             if (this._pendingInlineBase64Data) {
                 this.postToViewer(this._pendingInlineBase64Data);
                 this._pendingInlineBase64Data = undefined;
             }
         } else if (event.data.type === 'PDF_ERROR') {
-            this.showToast('Inline viewer could not render this document', event.data.message, 'error');
+            this.showToast('pdf.js viewer could not render this document', event.data.message, 'error');
         }
     }
 

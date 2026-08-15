@@ -70,17 +70,17 @@ Compensation fields to match that page's own layout.
    authenticated user by default, so no additional permission is needed just to read the
    configured template Ids.)
 
-## Viewing the generated PDF — two preview modes
+## Viewing the generated PDF — three preview modes
 
 Neither LWC can embed a PDF's bytes directly in its own markup via a Blob object URL —
-Lightning Web Security blocks `<iframe src="blob:...">` outright. Both components ship **two**
-preview options side by side, with a toggle, so you can compare them after deploying and settle
-on one:
+Lightning Web Security blocks `<iframe src="blob:...">` outright. Both components ship
+**three** preview options side by side, with a toggle, so you can compare them after deploying
+and settle on one:
 
 - **Standard Preview** (default) — opens Salesforce's own **File Preview** overlay via
   `NavigationMixin` (`standard__namedPage` / `filePreview`), the same modal a Files related
   list uses. Zero extra dependencies; always available.
-- **Inline Viewer** — renders the PDF into `<canvas>` elements inside a same-origin
+- **Inline (pdf.js)** — renders the PDF into `<canvas>` elements inside a same-origin
   (`https://`) `<iframe>` embedded directly in the component, using the
   `WT_BrokerSnapshotPdfViewer` static resource (Mozilla's official
   [pdf.js](https://mozilla.github.io/pdf.js/) core rendering library, Apache-2.0 — **not** the
@@ -89,18 +89,35 @@ on one:
   the LWC posts the generated PDF's base64 bytes to the iframe once it reports itself ready;
   only files small enough to come back with inline base64 data (≤ ~3.5 MB — see
   `inlineDownloadMaxBytes` on each controller) can use this mode, and the LWC shows a message
-  and falls back to Standard Preview / Download when a file is too large for it.
+  and falls back to another mode when a file is too large for it.
+- **Inline (Simple)** — an `<iframe>` pointed directly at the file's own servlet download URL
+  (`https://`, same-origin, so LWS never blocks it either). This is
+  [Salesforce's own documented approach](https://developer.salesforce.com/blogs/2019/07/display-pdf-files-with-lightning-web-components)
+  and needs **no static resource and no code beyond a `<iframe src={downloadUrl}>`** — but it
+  only actually renders inline if the **org** is configured for it: **Setup → Security → File
+  Upload and Download Security → PDF → Execute in Browser**. (**Hybrid is not enough** — it
+  only executes legacy Attachments/Documents in-browser and still forces a download for
+  modern Salesforce Files, which is what every ContentVersion/ContentDocument here is.) That
+  setting is per-file-type but org-wide — it affects every PDF served through that URL
+  pattern, not just Broker Snapshot files — so it's an admin call, not something scoped to
+  just these two components. Until it's set, this mode will just download the file instead of
+  showing it; that's expected, not a bug.
 
-Both modes also feed a persistent file card (name + "Last generated on ...") and **Preview** /
+All three modes feed a persistent file card (name + "Last generated on ...") and **Preview** /
 **Download** buttons, so the user can reopen or download the current document at any time
 without regenerating.
 
-The `WT_BrokerSnapshotPdfViewer` static resource bundles only pdf.js's core library
-(`build/pdf.mjs` + `build/pdf.worker.mjs`, source maps stripped, ~0.6 MB zipped) plus a small
-custom `viewer.html` / `viewer.js` written for this project — deliberately **not** pdf.js's
-full prebuilt toolbar/UI application, so the whole rendering pipeline (the `postMessage`
-listener, the canvas rendering loop, the origin check) is code in this repo you can read
-end to end, rather than an opaque bundled app.
+The `WT_BrokerSnapshotPdfViewer` static resource (used only by the pdf.js mode) bundles only
+pdf.js's core library (`build/pdf.mjs` + `build/pdf.worker.mjs`, source maps stripped, ~0.6 MB
+zipped) plus a small custom `viewer.html` / `viewer.js` written for this project —
+deliberately **not** pdf.js's full prebuilt toolbar/UI application, so the whole rendering
+pipeline (the `postMessage` listener, the canvas rendering loop, the origin check) is code in
+this repo you can read end to end, rather than an opaque bundled app.
+
+**Recommendation once you've compared them**: if "Inline (Simple)" renders correctly after the
+Setup change, it's the least code to maintain going forward (no static resource, no
+postMessage protocol) — worth removing the pdf.js mode and its static resource at that point
+rather than keeping three permanently.
 
 ## Regenerating the templates
 

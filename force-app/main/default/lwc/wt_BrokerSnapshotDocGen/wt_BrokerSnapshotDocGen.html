@@ -59,22 +59,41 @@
                     onclick={handleStandardPreviewSelected}
                 ></lightning-button>
                 <lightning-button
-                    variant={inlineViewerButtonVariant}
-                    label="Inline Viewer"
-                    onclick={handleInlineViewerSelected}
+                    variant={pdfjsViewerButtonVariant}
+                    label="Inline (pdf.js)"
+                    onclick={handlePdfjsViewerSelected}
+                ></lightning-button>
+                <lightning-button
+                    variant={servletViewerButtonVariant}
+                    label="Inline (Simple)"
+                    onclick={handleServletViewerSelected}
                 ></lightning-button>
             </lightning-button-group>
         </div>
 
-        <template lwc:if={inlineViewerUnavailableMessage}>
-            <p class="slds-text-body_small slds-text-color_weak slds-text-align_center slds-m-bottom_small">{inlineViewerUnavailableMessage}</p>
+        <template lwc:if={pdfjsViewerUnavailableMessage}>
+            <p class="slds-text-body_small slds-text-color_weak slds-text-align_center slds-m-bottom_small">{pdfjsViewerUnavailableMessage}</p>
         </template>
 
-        <template lwc:if={showInlineViewer}>
+        <template lwc:if={servletViewerHint}>
+            <p class="slds-text-body_small slds-text-color_weak slds-text-align_center slds-m-bottom_small">{servletViewerHint}</p>
+        </template>
+
+        <template lwc:if={showPdfjsViewer}>
             <div class="broker-snapshot-inline-viewer-wrap">
                 <iframe
-                    class="broker-snapshot-inline-viewer"
+                    class="broker-snapshot-inline-viewer broker-snapshot-pdfjs-viewer"
                     src={pdfViewerUrl}
+                    title={fileName}
+                ></iframe>
+            </div>
+        </template>
+
+        <template lwc:if={showServletViewer}>
+            <div class="broker-snapshot-inline-viewer-wrap">
+                <iframe
+                    class="broker-snapshot-inline-viewer broker-snapshot-servlet-viewer"
+                    src={downloadUrl}
                     title={fileName}
                 ></iframe>
             </div>
