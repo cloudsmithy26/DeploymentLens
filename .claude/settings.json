@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(gh repo view Portwood-Global-Solutions/Portwood 2>&1)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "PowerShell(powershell -NoProfile -ExecutionPolicy Bypass -File \"C:\\\\Users\\\\vsomi\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--GitHub-DeploymentLens\\\\7a79f95a-c99e-4409-bd94-78edc2538360\\\\scratchpad\\\\build_docx.ps1\")",
+      "WebSearch",
+      "PowerShell(powershell -NoProfile -ExecutionPolicy Bypass -File \"C:\\\\Users\\\\vsomi\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--GitHub-DeploymentLens\\\\7a79f95a-c99e-4409-bd94-78edc2538360\\\\scratchpad\\\\build_tech_design_docx.ps1\")"
+    ]
+  }
+}

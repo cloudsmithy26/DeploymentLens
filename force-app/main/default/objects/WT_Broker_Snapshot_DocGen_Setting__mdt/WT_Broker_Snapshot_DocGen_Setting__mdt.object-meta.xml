@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <label>WT Broker Snapshot DocGen Setting</label>
+    <pluralLabel>WT Broker Snapshot DocGen Settings</pluralLabel>
+    <visibility>Public</visibility>
+    <description>Holds the Id of the active Portwood DocGen Template used to generate the Broker Snapshot PDF. Lets the template Id be reconfigured per sandbox/production without an Apex change, replacing the earlier hard-coded-name lookup.</description>
+</CustomObject>

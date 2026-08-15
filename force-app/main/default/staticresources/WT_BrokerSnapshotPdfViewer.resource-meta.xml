@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<StaticResource xmlns="http://soap.sforce.com/2006/04/metadata">
+    <cacheControl>Public</cacheControl>
+    <contentType>application/zip</contentType>
+    <description>Minimal PDF.js-based PDF viewer used as an alternate, embedded-in-page preview option for the Broker Snapshot LWCs, alongside Salesforce's standard File Preview overlay. Bundles only PDF.js's core rendering library (Mozilla pdf.js v6.2.108, build/pdf.mjs + build/pdf.worker.mjs — Apache-2.0) plus a small custom viewer.html/viewer.js written for this project; it does not include PDF.js's full prebuilt toolbar/UI app. The parent LWC posts the generated PDF's base64 data into this iframe via window.postMessage once it reports {type:"VIEWER_READY"}; the viewer renders each page to a canvas and never navigates or fetches anything outside the static resource.</description>
+</StaticResource>

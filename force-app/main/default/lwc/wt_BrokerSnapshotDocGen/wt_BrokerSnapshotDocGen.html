@@ -1,0 +1,93 @@
+<template>
+    <div class="slds-p-around_medium broker-snapshot-shell">
+        <p class="slds-text-heading_small slds-m-bottom_small slds-text-align_center">Broker Snapshot</p>
+
+        <template lwc:if={hasDocument}>
+            <div class="slds-box slds-box_x-small slds-m-bottom_small broker-snapshot-file-card" onclick={handlePreviewClick}>
+                <lightning-icon icon-name="doctype:pdf" size="medium" class="slds-m-right_small"></lightning-icon>
+                <div class="broker-snapshot-file-meta">
+                    <p class="slds-text-body_regular slds-text-font_bold">{fileName}</p>
+                    <p class="slds-text-body_small slds-text-color_weak">Last generated on {generatedDateLabel}</p>
+                </div>
+                <lightning-icon icon-name="utility:preview" size="x-small" class="broker-snapshot-preview-icon"></lightning-icon>
+            </div>
+        </template>
+
+        <template lwc:if={showEmptyState}>
+            <p class="slds-text-body_small slds-text-color_weak slds-text-align_center slds-m-bottom_small">
+                No Broker Snapshot has been generated yet.
+            </p>
+        </template>
+
+        <template lwc:if={isLoadingExisting}>
+            <div class="slds-align_absolute-center slds-m-bottom_small">
+                <lightning-spinner alternative-text="Checking for a previously generated snapshot" size="small"></lightning-spinner>
+            </div>
+        </template>
+
+        <div class="slds-align_absolute-center slds-m-bottom_small broker-snapshot-actions">
+            <lightning-button
+                variant="brand"
+                label={generateButtonLabel}
+                disabled={isButtonDisabled}
+                onclick={handleGenerateClick}
+                class="slds-m-right_small"
+            ></lightning-button>
+            <lightning-button
+                variant="neutral"
+                label="Preview"
+                icon-name="utility:preview"
+                disabled={isPreviewDisabled}
+                onclick={handlePreviewClick}
+                class="slds-m-right_small"
+            ></lightning-button>
+            <lightning-button
+                variant="neutral"
+                label="Download"
+                icon-name="utility:download"
+                disabled={isDownloadDisabled}
+                onclick={handleDownloadClick}
+            ></lightning-button>
+        </div>
+
+        <div class="slds-align_absolute-center slds-m-bottom_small broker-snapshot-actions">
+            <p class="slds-text-body_small slds-text-color_weak slds-m-right_small broker-snapshot-mode-label">Preview mode (comparing options):</p>
+            <lightning-button-group>
+                <lightning-button
+                    variant={standardPreviewButtonVariant}
+                    label="Standard Preview"
+                    onclick={handleStandardPreviewSelected}
+                ></lightning-button>
+                <lightning-button
+                    variant={inlineViewerButtonVariant}
+                    label="Inline Viewer"
+                    onclick={handleInlineViewerSelected}
+                ></lightning-button>
+            </lightning-button-group>
+        </div>
+
+        <template lwc:if={inlineViewerUnavailableMessage}>
+            <p class="slds-text-body_small slds-text-color_weak slds-text-align_center slds-m-bottom_small">{inlineViewerUnavailableMessage}</p>
+        </template>
+
+        <template lwc:if={showInlineViewer}>
+            <div class="broker-snapshot-inline-viewer-wrap">
+                <iframe
+                    class="broker-snapshot-inline-viewer"
+                    src={pdfViewerUrl}
+                    title={fileName}
+                ></iframe>
+            </div>
+        </template>
+
+        <template lwc:if={isGenerating}>
+            <div class="slds-align_absolute-center slds-m-top_small">
+                <lightning-spinner alternative-text="Generating document" size="small"></lightning-spinner>
+            </div>
+        </template>
+
+        <template lwc:if={errorMessage}>
+            <div class="slds-text-color_error slds-text-align_center slds-m-top_small" role="alert">{errorMessage}</div>
+        </template>
+    </div>
+</template>
