@@ -1,6 +1,7 @@
 import { LightningElement, api } from 'lwc';
 import getRecentDeployments from '@salesforce/apex/DeploymentOverviewController.getRecentDeployments';
 import findDeploymentById from '@salesforce/apex/DeploymentOverviewController.findDeploymentById';
+import { callApexWithRetry } from 'c/apexCalloutRetry';
 
 const COLUMNS = [
     {
@@ -28,19 +29,33 @@ export default class DeploymentList extends LightningElement {
 
     _limitSize = '10';
     _searchId = '';
+    _loadQueued = false;
 
     @api
     get limitSize() { return this._limitSize; }
     set limitSize(value) {
         this._limitSize = value || '10';
-        this.load();
+        this.queueLoad();
     }
 
     @api
     get searchId() { return this._searchId; }
     set searchId(value) {
         this._searchId = (value || '').trim();
-        this.load();
+        this.queueLoad();
+    }
+
+    // limitSize and searchId are both bound on the parent template, so LWC invokes
+    // both setters in the same render pass. Without coalescing, that fires two
+    // concurrent getRecentDeployments callouts through the same loopback Named
+    // Credential on every mount, which can race the OAuth token cache and 401.
+    queueLoad() {
+        if (this._loadQueued) { return; }
+        this._loadQueued = true;
+        Promise.resolve().then(() => {
+            this._loadQueued = false;
+            this.load();
+        });
     }
 
     get hasRows() {
@@ -56,8 +71,8 @@ export default class DeploymentList extends LightningElement {
         this.error = undefined;
         try {
             const data = this._searchId
-                ? await findDeploymentById({ deploymentId: this._searchId })
-                : await getRecentDeployments({ limitSize: parseInt(this._limitSize, 10) });
+                ? await callApexWithRetry(findDeploymentById, { deploymentId: this._searchId })
+                : await callApexWithRetry(getRecentDeployments, { limitSize: parseInt(this._limitSize, 10) });
             this.rows = (data || []).map((d) => ({
                 ...d,
                 deployType: d.checkOnly ? 'Validation' : 'Deploy',

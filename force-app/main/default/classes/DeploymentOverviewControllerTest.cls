@@ -29,6 +29,27 @@ private class DeploymentOverviewControllerTest {
         }
     }
 
+    private class FlakyTokenMock implements HttpCalloutMock {
+        Integer callCount = 0;
+        String successBody;
+        FlakyTokenMock(String successBody) {
+            this.successBody = successBody;
+        }
+        public HttpResponse respond(HttpRequest calloutRequest) {
+            callCount++;
+            HttpResponse mockResponse = new HttpResponse();
+            mockResponse.setHeader('Content-Type', 'application/json');
+            if (callCount == 1) {
+                mockResponse.setStatusCode(401);
+                mockResponse.setBody('{"message":"Session expired or invalid","errorCode":"INVALID_SESSION_ID"}');
+            } else {
+                mockResponse.setStatusCode(200);
+                mockResponse.setBody(successBody);
+            }
+            return mockResponse;
+        }
+    }
+
     private static String toolingQueryBody() {
         return '{"size":1,"records":[{"Id":"' + DEPLOY_ID + '","Status":"Succeeded",'
             + '"CheckOnly":false,"CreatedDate":"2026-08-01T10:00:00.000+0000",'
@@ -136,6 +157,17 @@ private class DeploymentOverviewControllerTest {
             }
         }
         System.assert(threw, 'Users without the custom permission must be blocked');
+    }
+
+    @IsTest
+    static void staleTokenRetriesOnceAndSucceeds() {
+        FlakyTokenMock flakyMock = new FlakyTokenMock(toolingQueryBody());
+        Test.setMock(HttpCalloutMock.class, flakyMock);
+        Test.startTest();
+        List<DeploymentSummary> listDeployments = DeploymentOverviewController.getRecentDeployments(5);
+        Test.stopTest();
+        System.assertEquals(2, flakyMock.callCount, 'A 401 must trigger exactly one retry');
+        System.assertEquals(1, listDeployments.size(), 'The retried callout must still return data');
     }
 
     @IsTest
