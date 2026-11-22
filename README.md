@@ -46,8 +46,8 @@ Install into your org with one of the following URLs (log in first):
 
 | Org type | Install URL |
 |---|---|
-| Production / Developer Edition | https://login.salesforce.com/packaging/installPackage.apexp?p0=04tbm000000d7RRAAY |
-| Sandbox | https://test.salesforce.com/packaging/installPackage.apexp?p0=04tbm000000d7RRAAY |
+| Production / Developer Edition | https://login.salesforce.com/packaging/installPackage.apexp?p0=04tbm00000105K5AAI |
+| Sandbox | https://test.salesforce.com/packaging/installPackage.apexp?p0=04tbm00000105K5AAI |
 
 After installing:
 

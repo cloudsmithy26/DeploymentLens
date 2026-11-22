@@ -2,7 +2,7 @@
   "packageDirectories": [
     {
       "versionName": "ver 0.1",
-      "versionNumber": "0.1.0.NEXT",
+      "versionNumber": "0.1.1.NEXT",
       "path": "force-app",
       "default": true,
       "package": "DeploymentLens",
@@ -16,6 +16,7 @@
   "packageAliases": {
     "DeploymentLens": "0Hobm00000055ThCAI",
     "DeploymentLens@0.1.0-1": "04tbm000000aXzxAAE",
-    "DeploymentLens@0.1.0-2": "04tbm000000d7RRAAY"
+    "DeploymentLens@0.1.0-2": "04tbm000000d7RRAAY",
+    "DeploymentLens@0.1.1-1": "04tbm00000105K5AAI"
   }
 }
