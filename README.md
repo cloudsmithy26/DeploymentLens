@@ -14,6 +14,30 @@ every failure message, without leaving Salesforce.
   metadata type, API name, and failure messages, plus every Apex test method's
   pass/fail outcome, runtime, and stack trace.
 
+## See it in action
+
+This 24-second demo tests the connection in the Setup Assistant, opens
+DeploymentLens, changes how many deployments are shown, and drills into two
+deployments.
+
+![DeploymentLens demo: testing the connection, browsing recent deployments, and drilling into one](docs/media/demo.gif)
+
+### Deployment list
+
+The dashboard shows recent deployments with status, type (deploy or
+validation), initiator, component progress, and test errors. Use the
+Deployment Id search to jump straight to any `0Af…` deployment.
+
+![Deployment list showing recent deployments with status and progress](docs/media/deployment-list.png)
+
+### Deployment details
+
+Open a deployment to see each component in Success and Failure tabs, with
+its metadata type, API name, and failure message. Each Apex test method shows
+its outcome, runtime, and stack trace.
+
+![Deployment details showing the Successes tab with each deployed component](docs/media/deployment-details.png)
+
 ---
 
 ## Step 1 — Install the package
@@ -32,6 +56,8 @@ After installing:
 2. **Open the Setup Assistant**: App Launcher → **DeploymentLens Setup**.
    It shows your org's exact configuration values with copy buttons and a
    Test connection button — keep it open for steps 2–4.
+
+![Setup Assistant showing org-specific values with copy buttons and a successful connection test](docs/media/setup-assistant.png)
 
 ## Step 2 — Create an External Client App
 

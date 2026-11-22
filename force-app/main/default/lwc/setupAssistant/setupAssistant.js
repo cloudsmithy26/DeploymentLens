@@ -1,4 +1,5 @@
 import { LightningElement, wire } from 'lwc';
+import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import getSetupInfo from '@salesforce/apex/DeploymentOverviewSetupController.getSetupInfo';
 import testConnection from '@salesforce/apex/DeploymentOverviewSetupController.testConnection';
 
@@ -18,9 +19,53 @@ export default class SetupAssistant extends LightningElement {
             ? 'slds-theme_success' : 'slds-theme_error');
     }
 
-    handleCopy(event) {
+    async handleCopy(event) {
         const value = event.currentTarget.dataset.value;
-        if (navigator.clipboard) { navigator.clipboard.writeText(value); }
+        if (!value) { return; }
+
+        let copied = false;
+        // The async Clipboard API is often unavailable or blocked inside Lightning
+        // (Locker/LWS, iframes, permissions policy), so fall back to execCommand.
+        try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(value);
+                copied = true;
+            }
+        } catch (e) {
+            copied = false;
+        }
+        if (!copied) { copied = this.copyWithTextarea(value); }
+
+        this.dispatchEvent(new ShowToastEvent({
+            title: copied ? 'Copied' : 'Copy failed',
+            message: copied ? value : 'Select the value and copy it manually.',
+            variant: copied ? 'success' : 'error'
+        }));
+    }
+
+    copyWithTextarea(value) {
+        const host = this.template.querySelector('.copy-host');
+        if (!host) { return false; }
+        const textarea = document.createElement('textarea');
+        textarea.value = value;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'fixed';
+        textarea.style.top = '0';
+        textarea.style.left = '0';
+        textarea.style.opacity = '0';
+        host.appendChild(textarea);
+        let ok = false;
+        try {
+            textarea.focus();
+            textarea.select();
+            textarea.setSelectionRange(0, value.length);
+            ok = document.execCommand('copy');
+        } catch (e) {
+            ok = false;
+        } finally {
+            host.removeChild(textarea);
+        }
+        return ok;
     }
 
     async handleTest() {
